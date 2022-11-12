@@ -11,30 +11,24 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import {bgLight, lightDark, Size} from '../utils/colors';
-import {useSelector} from 'react-redux';
+import {bgLight, lightDark, offset, Size} from '../utils/colors';
+
 import {deviceTypeAndroid} from '../utils/platforms';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import io from 'socket.io-client';
-import {baseURL} from '../utils/operations';
-const socket = io(baseURL);
+import {useProfileQuery} from '../feature/services/query';
+const socket = io('https://c61c-105-112-190-121.eu.ngrok.io/');
 
 export const DiscussionDetails = ({navigation, route}) => {
-  socket.on('connection', socket => {
-    console.log(socket);
-    console.log('Connection successful...');
-  });
-  //hook up to redux store
-  const {discussionList, login} = useSelector(state => state.globals);
-
-  const discussion = discussionList.filter(_ => _.key === route.params.id);
+  const {data} = useProfileQuery();
+  const {selected} = route.params;
 
   const handleJoin = () => {
     // alert user of incoming features
     Alert.alert(
       'Aah!',
-      `${discussion[0].title} chat Isn't available yet. Click join to be whitelisted for this feature when available`,
+      `${selected?.title} chat Isn't available yet. Click join to be whitelisted for this feature when available`,
       [
         {
           text: 'Cancel',
@@ -47,11 +41,15 @@ export const DiscussionDetails = ({navigation, route}) => {
           onPress: () => {
             Alert.alert(
               'Congratulations!',
-              `You have been whitelisted for the category`,
+              `You have been whitelisted for this category`,
             );
 
             //emit join message
-            socket.emit('join', {room: discussion[0].title, id: socket.id});
+            socket.emit('join', {
+              room: selected?.title,
+              id: socket.id,
+              user: {username: data?.user},
+            });
           },
         },
       ],
@@ -59,7 +57,7 @@ export const DiscussionDetails = ({navigation, route}) => {
   };
 
   useEffect(() => {
-    socket.on(`new ${discussion[0].title} member`, data => {
+    socket.on(`new ${selected?.title} member`, data => {
       console.log(data);
     });
   });
@@ -73,11 +71,15 @@ export const DiscussionDetails = ({navigation, route}) => {
       />
 
       <SafeAreaView style={{flex: 1, backgroundColor: bgLight}}>
-        <ScrollView contentContainerStyle={StyleSheet.container}>
+        <ScrollView
+          contentContainerStyle={[StyleSheet.container]}
+          showsVerticalScrollIndicator={false}>
           <ImageBackground
-            source={discussion[0].poster}
-            style={styles.bannerImage}>
+            source={selected?.poster}
+            style={[styles.bannerImage]}
+            resizeMode="cover">
             <TouchableOpacity
+              activeOpacity={1}
               style={{
                 marginTop: 40,
                 marginLeft: 20,
@@ -97,9 +99,10 @@ export const DiscussionDetails = ({navigation, route}) => {
                 alignItems: 'center',
                 marginBottom: 40,
               }}>
-              <Text style={styles.title}>#{discussion[0].title}</Text>
+              <Text style={styles.title}>#{selected?.title}</Text>
 
               <TouchableOpacity
+                activeOpacity={1}
                 onPress={handleJoin}
                 style={{
                   paddingBottom: 8,
@@ -145,7 +148,7 @@ const styles = StyleSheet.create({
   },
 
   backText: {
-    fontFamily: 'Outfit-Medium',
+    fontFamily: 'Outfit-Light',
     fontSize: deviceTypeAndroid === 'Handset' ? 18 : 30,
     color: bgLight,
   },
@@ -153,7 +156,6 @@ const styles = StyleSheet.create({
   bannerImage: {
     width: '100%',
     height: 200,
-    resizeMode: 'cover',
   },
 
   description: {

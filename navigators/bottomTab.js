@@ -6,7 +6,7 @@ import TrendingScreen from '../screens/trendingScreen';
 import {SearchScreen} from '../screens/searchScreen';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {bgPrimary, lightDark, Size} from '../utils/colors';
+import {bgPrimary, bgSecondary, lightDark, Size} from '../utils/colors';
 import {deviceTypeAndroid} from '../utils/platforms';
 
 const Tab = createBottomTabNavigator();
@@ -72,6 +72,8 @@ const TabIconComponent = ({focused, route, color}) => {
 export const MainTab = () => {
   return (
     <Tab.Navigator
+      backBehavior="none"
+      initialRouteName="Trending"
       screenOptions={({route}) => ({
         headerShown: false,
         tabBarActiveTintColor: bgPrimary,
@@ -83,7 +85,9 @@ export const MainTab = () => {
           elevation: 0,
         },
         tabBarHideOnKeyboard: true,
-        tabBarButton: props => <TouchableOpacity {...props} />,
+        tabBarButton: props => (
+          <TouchableOpacity {...props} activeOpacity={1} />
+        ),
         tabBarIcon: (focused, color = bgPrimary, size) => (
           <TabIconComponent
             focused={focused}
@@ -94,7 +98,7 @@ export const MainTab = () => {
         ),
       })}
       activeColor={bgPrimary}>
-      <Tab.Screen name="Trending" component={TrendingScreen} />
+      <Tab.Screen name="Trending">{() => <TrendingScreen />}</Tab.Screen>
       <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>

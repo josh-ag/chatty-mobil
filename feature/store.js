@@ -1,11 +1,11 @@
 import {configureStore} from '@reduxjs/toolkit';
 import {setupListeners} from '@reduxjs/toolkit/query';
-import appGlobalReducer from './reducers/appGlobalReducer';
+import authReducer from './reducers/authReducer';
 import {api} from './services/query';
 
 const store = configureStore({
   reducer: {
-    globals: appGlobalReducer,
+    auth: authReducer,
     [api.reducerPath]: api.reducer,
   },
 

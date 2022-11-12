@@ -1,21 +1,20 @@
 import React, {useState} from 'react';
 import {
-  ScrollView,
   View,
   Text,
   TouchableOpacity,
   TextInput,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   ImageBackground,
   ActivityIndicator,
   Dimensions,
+  SafeAreaView,
+  ScrollView,
 } from 'react-native';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {ErrorComponent} from '../components/errors';
-
+import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 import {
   bgLight,
   lightDark,
@@ -23,9 +22,11 @@ import {
   bgPrimary,
   Size,
   bgSecondary,
+  colorGoogle,
+  offset,
 } from '../utils/colors';
-import {initPasswordReset} from '../utils/operations';
 import {deviceTypeAndroid} from '../utils/platforms';
+import {useResetPasswordMutation} from '../feature/services/query';
 
 export const PasswordResetScreen = ({navigation}) => {
   /*
@@ -36,6 +37,7 @@ export const PasswordResetScreen = ({navigation}) => {
   const [resetEmail, setResetEmail] = useState('');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [resetPassword] = useResetPasswordMutation();
 
   const emailPattern =
     /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -54,16 +56,16 @@ export const PasswordResetScreen = ({navigation}) => {
     }
 
     try {
-      const response = await initPasswordReset(resetEmail);
+      const {data, error} = await resetPassword({email: resetEmail});
 
-      if (response.statusCode === 400) {
+      if (error) {
+        console.log('Error: ', error);
         setIsLoading(false);
-        return setError(response.message.error);
+        return setError(error.data.message || error?.error || error?.message);
       }
 
-      if (response.statusCode === 200) {
-        setIsLoading(false);
-        navigation.navigate('Confirmed', {message: response.message.success});
+      if (data) {
+        console.log(data);
       }
     } catch (err) {
       console.log(err);
@@ -71,6 +73,49 @@ export const PasswordResetScreen = ({navigation}) => {
   };
 
   const {width} = Dimensions.get('window');
+
+  const RenderError = () => (
+    <Animated.View
+      entering={SlideInDown}
+      exiting={SlideOutDown}
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        marginTop: 100,
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colorGoogle,
+      }}>
+      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
+        {error}
+      </Text>
+    </Animated.View>
+  );
+
+  const RenderSuccess = () => (
+    <Animated.View
+      entering={SlideInDown}
+      exiting={SlideOutDown}
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        marginTop: 100,
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colorGoogle,
+      }}>
+      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
+        {success}
+      </Text>
+    </Animated.View>
+  );
+
   return (
     <>
       <StatusBar
@@ -79,16 +124,15 @@ export const PasswordResetScreen = ({navigation}) => {
         backgroundColor={'transparent'}
       />
 
-      <ImageBackground
-        source={require('../assets/images/bgSecurity.jpg')}
-        style={{
-          flex: 1,
-          resizeMode: 'cover',
-          width: '100%',
-          height: '100%',
-        }}>
-        <SafeAreaView style={{flex: 1}}>
-          {error && <ErrorComponent message={error} setError={setError} />}
+      <SafeAreaView style={{flex: 1}}>
+        <ImageBackground
+          source={require('../assets/images/bgSecurity.jpg')}
+          style={{
+            flex: 1,
+            resizeMode: 'contain',
+            width: '100%',
+            height: '100%',
+          }}>
           {isLoading && (
             <View
               style={{
@@ -111,12 +155,16 @@ export const PasswordResetScreen = ({navigation}) => {
               />
             </View>
           )}
+          {error && <RenderError />}
           <ScrollView
-            contentContainerStyle={styles.contentsContainer}
+            contentContainerStyle={[
+              styles.contentsContainer,
+              {paddingTop: offset},
+            ]}
             showsVerticalScrollIndicator={false}>
             <TouchableOpacity
+              activeOpacity={1}
               style={{
-                alignSelf: 'flex-start',
                 flexDirection: 'row',
                 alignItems: 'center',
               }}
@@ -124,7 +172,6 @@ export const PasswordResetScreen = ({navigation}) => {
               <Ionicons name="chevron-back" color={bgPrimary} size={Size} />
               <Text style={styles.backText}>Back</Text>
             </TouchableOpacity>
-
             <Text style={styles.title}>Reset password</Text>
             <Text style={styles.description}>
               Enter the email associated with your account and we'll send email
@@ -133,6 +180,7 @@ export const PasswordResetScreen = ({navigation}) => {
 
             <View style={{marginTop: 40}}>
               <TouchableOpacity
+                activeOpacity={1}
                 style={{
                   position: 'absolute',
                   left: 0,
@@ -154,29 +202,27 @@ export const PasswordResetScreen = ({navigation}) => {
             </View>
 
             <TouchableOpacity
+              activeOpacity={1}
               onPress={handleSendInstructions}
               style={styles.btnLogin}>
               <Text style={styles.btnLoginText}>Send Instruction</Text>
             </TouchableOpacity>
           </ScrollView>
-        </SafeAreaView>
-      </ImageBackground>
+        </ImageBackground>
+      </SafeAreaView>
     </>
   );
 };
 
 const styles = StyleSheet.create({
   contentsContainer: {
-    flex: 1,
-    width: '100%',
-    paddingHorizontal: 20,
-    alignSelf: 'center',
-    justifyContent: 'flex-start',
-    marginTop: 60,
+    paddingHorizontal: 16,
+    position: 'relative',
+    zIndex: 2,
   },
 
   backText: {
-    fontFamily: 'Outfit-Medium',
+    fontFamily: 'Outfit-Light',
     fontSize: deviceTypeAndroid === 'Handset' ? 18 : 30,
     color: bgPrimary,
   },
@@ -191,8 +237,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: deviceTypeAndroid === 'Handset' ? 24 : 30,
     color: lightDark,
-    fontFamily: 'Outfit-Bold',
-    marginTop: 40,
+    fontFamily: 'Outfit-Medium',
+    marginTop: 30,
   },
 
   textInput: {

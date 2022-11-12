@@ -4,6 +4,11 @@ import {name as appName} from './app.json';
 import {Provider} from 'react-redux';
 import store from './feature/store';
 
-AppRegistry.registerComponent(appName, () => (
-  <Provider store={store}>App</Provider>
-));
+function Main() {
+  return (
+    <Provider store={store}>
+      <App />
+    </Provider>
+  );
+}
+AppRegistry.registerComponent(appName, () => Main);

@@ -20,111 +20,15 @@ import {
   Size,
   bgSecondary,
   colorSuccess,
+  offset,
 } from '../utils/colors';
-
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
-
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {useDispatch} from 'react-redux';
 import {deviceTypeAndroid} from '../utils/platforms';
-import {SuccessComponent} from '../components/success';
-import Animated, {
-  SlideInUp,
-  SlideInLeft,
-  SlideOutUp,
-  SlideOutRight,
-  FadeInUp,
-  FadeOutDown,
-} from 'react-native-reanimated';
-import {userRegister} from '../utils/operations';
-
-export const SignupErrorComponent = ({
-  message,
-  isError = !!message,
-  setError,
-}) => {
-  const {width, height} = useWindowDimensions();
-  const dispatch = useDispatch();
-  //dismiss log @3s
-  setTimeout(() => setError(false), 3000);
-
-  return (
-    <>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={isError ? colorGoogle : bgLight}
-      />
-      <SafeAreaView
-        style={{
-          flex: 1,
-          backgroundColor: bgLight,
-          position: 'absolute',
-          zIndex: 100,
-        }}>
-        <Animated.View
-          entering={FadeInUp}
-          exiting={FadeOutDown}
-          style={{
-            width,
-            height,
-            backgroundColor: 'rgba(227, 242, 253,.3)',
-            paddingTop: 10,
-            position: 'absolute',
-            alignItems: 'center',
-            justifyContent: 'center',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 100,
-          }}>
-          <Animated.View
-            entering={SlideInUp}
-            exiting={SlideOutUp}
-            style={{
-              height: 60,
-              width,
-              backgroundColor: colorGoogle,
-              paddingTop: 10,
-              position: 'absolute',
-              alignItems: 'center',
-              justifyContent: 'center',
-              top: 0,
-              left: 0,
-              zIndex: 100,
-            }}>
-            <TouchableOpacity
-              style={{position: 'absolute', right: 50, top: 5}}
-              onPress={() => setError(null)}>
-              <Ionicons
-                name="close"
-                color={bgLight}
-                size={deviceTypeAndroid === 'Handset' ? Size / 1.2 : Size / 1.2}
-              />
-            </TouchableOpacity>
-            <Animated.Text
-              entering={SlideInLeft}
-              exiting={SlideOutRight}
-              style={{
-                fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
-                fontFamily: 'Outfit-Medium',
-                color: bgLight,
-                textAlign: 'center',
-              }}>
-              <FontAwesome5
-                name="info-circle"
-                size={deviceTypeAndroid === 'Handset' ? Size / 1.8 : Size / 1.2}
-                color={bgLight}
-              />{' '}
-              {message}
-            </Animated.Text>
-          </Animated.View>
-        </Animated.View>
-      </SafeAreaView>
-    </>
-  );
-};
+import {useRegisterMutation} from '../feature/services/query';
+import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 
 export const SignUpScreen = ({navigation}) => {
   /*
@@ -141,6 +45,7 @@ export const SignUpScreen = ({navigation}) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [register] = useRegisterMutation();
 
   const iconName = visible ? 'eye-off' : 'eye';
 
@@ -170,38 +75,74 @@ export const SignUpScreen = ({navigation}) => {
     }
 
     const registrationInfo = {firstname, lastname, username, email, password};
-    const response = await userRegister(registrationInfo);
+    const {data, error} = await register(registrationInfo);
 
-    console.log('Signup Response: ', response);
-    if (
-      response.statusCode === 400 ||
-      response.statusCode === 500 ||
-      response.error
-    ) {
+    if (error) {
       setIsLoading(false);
-      setError(response.error.message);
-      return;
+      return setError(error?.data.message || error?.error);
     }
 
-    setTimeout(() => {
-      navigation.navigate('Login');
+    if (data) {
       setIsLoading(false);
-      setSuccess(response.success.message);
-    }, 2000);
+      setSuccess(data?.message || 'Registration Successful');
+      setTimeout(() => {
+        navigation.navigate('Login');
+      }, 2000);
+    }
   };
 
   const {width} = useWindowDimensions();
 
+  const RenderError = () => (
+    <Animated.View
+      entering={SlideInDown}
+      exiting={SlideOutDown}
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        marginTop: 100,
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colorGoogle,
+      }}>
+      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
+        {error}
+      </Text>
+    </Animated.View>
+  );
+
+  const RenderSuccess = () => (
+    <Animated.View
+      entering={SlideInDown}
+      exiting={SlideOutDown}
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        marginTop: 100,
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colorSuccess,
+      }}>
+      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
+        {success}
+      </Text>
+    </Animated.View>
+  );
+
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor={bgLight} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={'transparent'}
+        translucent
+      />
       <SafeAreaView style={{flex: 1, backgroundColor: bgLight}}>
-        {error && <SignupErrorComponent message={error} setError={setError} />}
-
-        {success && (
-          <SuccessComponent message={success} setSuccess={setSuccess} />
-        )}
-
         {isLoading ? (
           <View
             style={{
@@ -224,11 +165,18 @@ export const SignUpScreen = ({navigation}) => {
             />
           </View>
         ) : null}
+
+        {error && <RenderError />}
+        {success && <RenderSuccess />}
         <ScrollView
-          contentContainerStyle={styles.contentsContainer}
+          contentContainerStyle={[
+            styles.contentsContainer,
+            {paddingTop: offset},
+          ]}
           showsVerticalScrollIndicator={false}>
           <View style={styles.logoContainer}>
             <TouchableOpacity
+              activeOpacity={1}
               onPress={navigation.goBack}
               style={{
                 flexDirection: 'row',
@@ -239,7 +187,7 @@ export const SignUpScreen = ({navigation}) => {
               <Text style={styles.backText}>Back</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.title}> Signup Chatty!</Text>
+          <Text style={styles.title}> Signup</Text>
 
           <View
             style={{
@@ -247,6 +195,7 @@ export const SignUpScreen = ({navigation}) => {
             }}>
             <View style={styles.fieldContainer}>
               <TouchableOpacity
+                activeOpacity={1}
                 style={{
                   position: 'absolute',
                   left: 0,
@@ -268,6 +217,7 @@ export const SignUpScreen = ({navigation}) => {
             </View>
             <View style={styles.fieldContainer}>
               <TouchableOpacity
+                activeOpacity={1}
                 style={{
                   position: 'absolute',
                   left: 0,
@@ -289,6 +239,7 @@ export const SignUpScreen = ({navigation}) => {
             </View>
             <View style={styles.fieldContainer}>
               <TouchableOpacity
+                activeOpacity={1}
                 style={{
                   position: 'absolute',
                   left: 0,
@@ -311,6 +262,7 @@ export const SignUpScreen = ({navigation}) => {
 
             <View style={styles.fieldContainer}>
               <TouchableOpacity
+                activeOpacity={1}
                 style={{
                   position: 'absolute',
                   left: 0,
@@ -330,8 +282,9 @@ export const SignUpScreen = ({navigation}) => {
                 onChangeText={mail => setEmail(mail)}
               />
             </View>
-            <View style={styles.fieldContainer}>
+            <View>
               <TouchableOpacity
+                activeOpacity={1}
                 style={{
                   position: 'absolute',
                   left: 0,
@@ -352,6 +305,7 @@ export const SignUpScreen = ({navigation}) => {
                 secureTextEntry={visible}
               />
               <TouchableOpacity
+                activeOpacity={1}
                 style={{
                   position: 'absolute',
                   right: 0,
@@ -365,7 +319,10 @@ export const SignUpScreen = ({navigation}) => {
                 />
               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={handleRegister} style={styles.btnSignup}>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={handleRegister}
+              style={styles.btnSignup}>
               <Text style={styles.btnSignupText}>Sign-Up</Text>
             </TouchableOpacity>
             <Text
@@ -390,11 +347,12 @@ export const SignUpScreen = ({navigation}) => {
               marginTop: 20,
             }}>
             <TouchableOpacity
+              activeOpacity={1}
               style={{...styles.btnSocial, backgroundColor: bgPrimary}}>
               <FontAwesome5 name="facebook-f" color={bgLight} size={Size} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.btnSocial}>
+            <TouchableOpacity activeOpacity={1} style={styles.btnSocial}>
               <MaterialCommunityIcons
                 name="google"
                 color={bgLight}
@@ -403,6 +361,7 @@ export const SignUpScreen = ({navigation}) => {
               />
             </TouchableOpacity>
             <TouchableOpacity
+              activeOpacity={1}
               style={{...styles.btnSocial, backgroundColor: bgPrimary}}>
               <FontAwesome5
                 name="linkedin-in"
@@ -420,7 +379,9 @@ export const SignUpScreen = ({navigation}) => {
               alignSelf: 'center',
             }}>
             <Text style={styles.textInfo}>Already have account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => navigation.navigate('Login')}>
               <Text
                 style={{
                   ...styles.textInfo,
@@ -442,7 +403,7 @@ const styles = StyleSheet.create({
     backgroundColor: bgLight,
     paddingVertical: 20,
     width: '100%',
-    paddingHorizontal: 40,
+    paddingHorizontal: 16,
     alignSelf: 'center',
   },
 
@@ -452,7 +413,7 @@ const styles = StyleSheet.create({
   },
 
   backText: {
-    fontFamily: 'Outfit-Medium',
+    fontFamily: 'Outfit-Light',
     fontSize: deviceTypeAndroid === 'Handset' ? 18 : 30,
     color: bgPrimary,
   },
@@ -466,12 +427,12 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: deviceTypeAndroid === 'Handset' ? 24 : 30,
-    fontFamily: 'Outfit-Bold',
+    fontFamily: 'Outfit-Medium',
     color: lightDark,
   },
 
   fieldContainer: {
-    marginTop: 20,
+    marginBottom: 12,
   },
 
   textInput: {

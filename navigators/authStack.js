@@ -10,7 +10,12 @@ import {SuccessConfirmation} from '../screens/successConfirmation';
 const Stack = createNativeStackNavigator();
 
 export const AuthStack = () => (
-  <Stack.Navigator screenOptions={{headerShown: false}}>
+  <Stack.Navigator
+    screenOptions={{
+      headerShown: false,
+      animation: 'slide_from_right',
+      animationTypeForReplace: 'push',
+    }}>
     <Stack.Screen name="AppIntro" component={AppIntro} />
     <Stack.Screen name="Register" component={RegistrationScreen} />
     <Stack.Screen name="Login" component={LoginScreen} />

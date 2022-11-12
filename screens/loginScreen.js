@@ -8,7 +8,6 @@ import {
   StatusBar,
   TextInput,
   StyleSheet,
-  useWindowDimensions,
   ActivityIndicator,
 } from 'react-native';
 import {
@@ -18,118 +17,27 @@ import {
   colorGoogle,
   Size,
   colorDisabled,
-  bgSecondary,
+  colorSuccess,
+  offset,
 } from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import {useDispatch} from 'react-redux';
-import {SuccessComponent} from '../components/success';
 import {deviceTypeAndroid} from '../utils/platforms';
-import Animated, {
-  SlideInLeft,
-  SlideInUp,
-  SlideOutUp,
-  SlideOutRight,
-  FadeInUp,
-  FadeOutDown,
-} from 'react-native-reanimated';
-import {loginUser} from '../feature/reducers/appGlobalReducer';
-
-import {useLogin} from '../utils/operations';
-
-export const LoginErrorComponent = ({
-  message,
-  isError = !!message,
-  setError,
-}) => {
-  const {width, height} = useWindowDimensions();
-
-  //dismiss log @3s
-  setTimeout(() => setError(false), 3000);
-  return (
-    <>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={isError ? colorGoogle : bgLight}
-      />
-      <SafeAreaView
-        style={{
-          flex: 1,
-          position: 'absolute',
-          zIndex: 100,
-        }}>
-        <Animated.View
-          entering={FadeInUp}
-          exiting={FadeOutDown}
-          style={{
-            width,
-            height,
-            backgroundColor: 'rgba(227, 242, 253,.3)',
-            paddingTop: 10,
-            position: 'absolute',
-            alignItems: 'center',
-            justifyContent: 'center',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 101,
-          }}>
-          <Animated.View
-            entering={SlideInUp}
-            exiting={SlideOutUp}
-            style={{
-              height: 63,
-              width,
-              backgroundColor: colorGoogle,
-              paddingTop: 10,
-              position: 'absolute',
-              alignItems: 'center',
-              justifyContent: 'center',
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 99,
-            }}>
-            <TouchableOpacity
-              style={{position: 'absolute', right: 50, top: 20}}
-              onPresponses={() => setError(null)}>
-              <Ionicons
-                name="close"
-                color={bgLight}
-                size={deviceTypeAndroid === 'Handset' ? Size / 1.2 : Size / 1.2}
-              />
-            </TouchableOpacity>
-            <Animated.Text
-              entering={SlideInLeft}
-              exiting={SlideOutRight}
-              style={{
-                fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
-                fontFamily: 'Outfit-Medium',
-                color: bgLight,
-                textAlign: 'center',
-              }}>
-              <Ionicons
-                name="alert-circle"
-                size={deviceTypeAndroid === 'Handset' ? Size / 1.8 : Size / 1.2}
-                color={bgLight}
-              />{' '}
-              {message}
-            </Animated.Text>
-          </Animated.View>
-        </Animated.View>
-      </SafeAreaView>
-    </>
-  );
-};
+import {useLoginMutation} from '../feature/services/query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {Authenticate} from '../feature/reducers/authReducer';
+import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 
 export const LoginScreen = ({navigation}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [visible, setVisible] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [login] = useLoginMutation();
 
   const dispatch = useDispatch();
 
@@ -137,64 +45,104 @@ export const LoginScreen = ({navigation}) => {
     /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
   const handleLogin = async () => {
-    //reset error/loading state
-    setError(null);
-    setIsLoading(true);
+    try {
+      //reset error/loading state
+      setIsLoading(true);
+      setError(false);
 
-    if (!email || !password) {
+      if (!email || !password) {
+        setIsLoading(false);
+        return setError('Missing Parameter');
+      }
+
+      if (email && !emailPattern.test(email)) {
+        setIsLoading(false);
+        return setError('Invalid email address');
+      }
+
+      const loginData = {email, password};
+      let {data, error} = await login(loginData);
+
+      if (error) {
+        setIsLoading(false);
+        return setError(error?.data.message || error.error);
+      }
+
+      if (data) {
+        setSuccess(data.message);
+        await AsyncStorage.setItem('@auth_token', data?.token);
+
+        setTimeout(() => dispatch(Authenticate()), 1000);
+      }
+    } catch (err) {
       setIsLoading(false);
-      setError('Missing Parameters');
-      return;
+      setError(err.message);
+      console.log('Error: ', err);
     }
-
-    if (email && !emailPattern.test(email)) {
-      setIsLoading(false);
-      setError('Invalid email address');
-      return;
-    }
-
-    const response = await useLogin(email, password);
-
-    console.log('Login Response: ', response);
-
-    if (response?.error) {
-      setIsLoading(false);
-      setError(response.error.message);
-      return;
-    }
-
-    setIsLoading(false);
-
-    dispatch(
-      loginUser({
-        isLoggedIn: true,
-        id: response.user.id,
-        email: response.user.email,
-        username: response.user.username,
-      }),
-    );
   };
 
   const iconName = visible ? 'eye-off' : 'eye';
-  const {width} = useWindowDimensions();
+
+  const RenderError = () => (
+    <Animated.View
+      entering={SlideInDown}
+      exiting={SlideOutDown}
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        marginTop: 100,
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colorGoogle,
+      }}>
+      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
+        {error}
+      </Text>
+    </Animated.View>
+  );
+
+  const RenderSuccess = () => (
+    <Animated.View
+      entering={SlideInDown}
+      exiting={SlideOutDown}
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        marginTop: 100,
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colorSuccess,
+      }}>
+      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
+        {success}
+      </Text>
+    </Animated.View>
+  );
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor={bgLight} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={'transparent'}
+        translucent
+      />
       <SafeAreaView style={{flex: 1, backgroundColor: bgLight}}>
         {isLoading && (
-          <View
+          <Animated.View
             style={{
+              alignSelf: 'center',
               position: 'absolute',
-              top: 20,
-              justifyContent: 'center',
-              width: '100%',
-              zIndex: 100,
-              backgroundColor: bgSecondary,
-              width: 25,
-              height: 25,
-              borderRadius: 50,
-              right: width / 2,
+              marginTop: 100,
+              left: 0,
+              right: 0,
+              top: 0,
+              zIndex: 10,
             }}>
             <ActivityIndicator
               animating={isLoading || false}
@@ -202,40 +150,37 @@ export const LoginScreen = ({navigation}) => {
               hidesWhenStopped={true}
               size="small"
             />
-          </View>
+          </Animated.View>
         )}
-        {error ? (
-          <LoginErrorComponent message={error} setError={setError} />
-        ) : null}
-        {success ? (
-          <SuccessComponent message={success} setSuccess={setSuccess} />
-        ) : null}
-
+        {error && <RenderError />}
+        {success && <RenderSuccess />}
         <ScrollView
-          contentContainerStyle={styles.contentsContainer}
+          contentContainerStyle={[
+            styles.contentsContainer,
+            {paddingTop: offset},
+          ]}
           showsVerticalScrollIndicator={false}>
-          <View style={styles.logoContainer}>
-            <TouchableOpacity
-              onPress={navigation.goBack}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                alignSelf: 'flex-start',
-              }}>
-              <Ionicons name="chevron-back" color={bgPrimary} size={Size} />
-              <Text style={styles.backText}>Back</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
+            onPress={navigation.goBack}>
+            <Ionicons name="chevron-back" color={bgPrimary} size={Size} />
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
 
           <Text style={styles.title}>Welcome Back!</Text>
 
           <View
             style={{
-              marginTop: 40,
+              marginTop: 20,
               marginBottom: 20,
             }}>
             <View style={{marginBottom: 20}}>
               <TouchableOpacity
+                activeOpacity={1}
                 style={{
                   position: 'absolute',
                   left: 0,
@@ -258,6 +203,7 @@ export const LoginScreen = ({navigation}) => {
 
             <View style={{marginBottom: 20}}>
               <TouchableOpacity
+                activeOpacity={1}
                 style={{
                   position: 'absolute',
                   left: 0,
@@ -278,6 +224,7 @@ export const LoginScreen = ({navigation}) => {
                 secureTextEntry={visible}
               />
               <TouchableOpacity
+                activeOpacity={1}
                 style={{
                   position: 'absolute',
                   right: 0,
@@ -292,10 +239,14 @@ export const LoginScreen = ({navigation}) => {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity onPress={handleLogin} style={styles.btnLogin}>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={handleLogin}
+              style={styles.btnLogin}>
               <Text style={styles.btnLoginText}>Sign-In</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              activeOpacity={1}
               style={{alignSelf: 'center'}}
               onPress={() => navigation.navigate('PasswordReset')}>
               <Text style={styles.forgetPasswd}>Forget password?</Text>
@@ -310,11 +261,12 @@ export const LoginScreen = ({navigation}) => {
               marginTop: 20,
             }}>
             <TouchableOpacity
+              activeOpacity={1}
               style={[styles.btnSocial, {backgroundColor: bgPrimary}]}>
               <FontAwesome5 name="facebook-f" color={bgLight} size={Size} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.btnSocial}>
+            <TouchableOpacity activeOpacity={1} style={styles.btnSocial}>
               <Ionicons
                 name="logo-google"
                 color={bgLight}
@@ -323,6 +275,7 @@ export const LoginScreen = ({navigation}) => {
               />
             </TouchableOpacity>
             <TouchableOpacity
+              activeOpacity={1}
               style={[styles.btnSocial, {backgroundColor: bgPrimary}]}>
               <FontAwesome5
                 name="linkedin-in"
@@ -340,7 +293,9 @@ export const LoginScreen = ({navigation}) => {
               alignSelf: 'center',
             }}>
             <Text style={styles.textInfo}>Don't have account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => navigation.navigate('Signup')}>
               <Text
                 style={[
                   styles.textInfo,
@@ -362,18 +317,12 @@ export const LoginScreen = ({navigation}) => {
 const styles = StyleSheet.create({
   contentsContainer: {
     backgroundColor: bgLight,
-    paddingVertical: 20,
     width: '100%',
-    paddingHorizontal: 20,
-    alignSelf: 'center',
+    paddingHorizontal: 16,
   },
 
-  logoContainer: {
-    flexDirection: 'column',
-    marginBottom: 40,
-  },
   backText: {
-    fontFamily: 'Outfit-Medium',
+    fontFamily: 'Outfit-Light',
     fontSize: deviceTypeAndroid === 'Handset' ? 18 : 30,
     color: bgPrimary,
   },
@@ -385,8 +334,9 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: deviceTypeAndroid === 'Handset' ? 24 : 30,
-    fontFamily: 'Outfit-Bold',
+    fontFamily: 'Outfit-Medium',
     color: lightDark,
+    marginTop: 30,
   },
 
   textInput: {

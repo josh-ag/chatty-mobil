@@ -16,8 +16,9 @@ import {
   lightDark,
   textDark,
   bgSecondary,
+  offset,
 } from '../utils/colors';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {deviceTypeAndroid} from '../utils/platforms';
 
@@ -34,64 +35,50 @@ export const SearchScreen = ({navigation}) => {
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor={bgSecondary} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={'transparent'}
+        translucent
+      />
       <SafeAreaView
         style={{
           flex: 1,
           backgroundColor: bgLight,
         }}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{}}>
           <View
             style={{
-              flex: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
               justifyContent: 'space-around',
               backgroundColor: bgSecondary,
+              borderBottomLeftRadius: 20,
+              borderBottomRightRadius: 20,
+              padding: 16,
+              paddingTop: offset + 10,
             }}>
-            <TouchableOpacity
-              onPress={navigation.goBack}
-              style={{
-                backgroundColor: 'transparent',
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}>
-              <Ionicons name="chevron-back" color={bgPrimary} size={Size} />
-              <Text
-                style={{
-                  fontFamily: 'Outfit-Medium',
-                  fontSize: deviceTypeAndroid === 'Handset' ? 18 : 30,
-                  color: bgPrimary,
-                }}>
-                Back
-              </Text>
-            </TouchableOpacity>
             <View
               style={{
                 flex: 1,
                 flexDirection: 'row',
                 justifyContent: 'center',
                 alignItems: 'center',
-                paddingVertical: 10,
                 backgroundColor: bgSecondary,
               }}>
               <TouchableOpacity
+                activeOpacity={1}
                 onPress={handleSubmit}
                 style={{position: 'absolute', left: 35, zIndex: 100}}>
-                <FontAwesome5
-                  name="search"
-                  size={Size / 1.5}
-                  color={bgPrimary}
-                />
+                <Ionicons name="search" size={Size / 1.5} color={bgPrimary} />
               </TouchableOpacity>
               <TextInput
                 onSubmitEditing={handleSubmit}
                 onChangeText={txt => setSearch(txt)}
                 placeholder="Search"
                 style={{
-                  width: '90%',
+                  width: '100%',
                   borderRadius: 50,
-                  paddingLeft: 40,
+                  paddingLeft: 60,
                   color: textDark,
                   fontFamily: 'Outfit',
                   fontSize: 16,

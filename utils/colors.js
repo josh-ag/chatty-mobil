@@ -9,3 +9,4 @@ export const colorError = '#ef4747';
 export const colorSuccess = '#2ed971';
 export const Size = 27;
 export const bgSecondary = '#e3f2fd';
+export const offset = 45;

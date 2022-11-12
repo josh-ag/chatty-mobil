@@ -1,13 +1,13 @@
 import React from 'react';
 import {
   SafeAreaView,
-  ScrollView,
   View,
   Text,
   TouchableOpacity,
   Image,
   StatusBar,
   StyleSheet,
+  ScrollView,
 } from 'react-native';
 import {
   bgLight,
@@ -17,104 +17,120 @@ import {
   colorFb,
   colorGoogle,
   Size,
+  offset,
 } from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import {deviceTypeAndroid} from '../utils/platforms';
+import {MyAppText} from '../components';
 
 export const RegistrationScreen = ({navigation}) => {
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: bgLight}}>
-      <StatusBar barStyle="dark-content" backgroundColor={bgLight} />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.contentsContainer}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../assets/images/rounded-chat.png')}
-            style={styles.logo}
-          />
-          <Text style={styles.logoText}>Chatty</Text>
-        </View>
-        <View>
-          <Image
-            source={require('../assets/images/connect_world.png')}
-            style={styles.bannerImage}
-          />
-        </View>
-        <View style={{marginBottom: 40}}>
-          <Text style={styles.pageTitle}>Chatty!</Text>
-          <Text style={styles.description}>Build Connection to your world</Text>
-        </View>
+    <>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={'transparent'}
+        translucent
+      />
+      <SafeAreaView style={{flex: 1, backgroundColor: bgLight}}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.contentsContainer,
+            {paddingTop: offset},
+          ]}>
+          <View style={[styles.logoContainer]}>
+            <Image
+              source={require('../assets/images/rounded-chat.png')}
+              style={styles.logo}
+            />
+            <MyAppText style={styles.logoText}>Chatty</MyAppText>
+          </View>
+          <View>
+            <Image
+              source={require('../assets/images/connect_world.png')}
+              style={styles.bannerImage}
+            />
+          </View>
+          <View style={{marginBottom: 40}}>
+            <MyAppText style={styles.pageTitle}>Chatty!</MyAppText>
+            <MyAppText style={styles.description}>
+              Build Connection to your world
+            </MyAppText>
+          </View>
 
-        <View style={styles.form}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Login')}
-            style={styles.Button}>
-            <Text
+          <View style={styles.form}>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => navigation.navigate('Login')}
+              style={styles.Button}>
+              <Text
+                style={{
+                  color: bgLight,
+                  fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
+                  fontFamily:
+                    deviceTypeAndroid === 'Handset'
+                      ? 'Outfit-Medium'
+                      : 'Outfit-Bold',
+                }}>
+                Login
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => navigation.navigate('Signup')}
               style={{
-                color: bgLight,
-                fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
-                fontFamily:
-                  deviceTypeAndroid === 'Handset'
-                    ? 'Outfit-Medium'
-                    : 'Outfit-Bold',
+                ...styles.Button,
+                backgroundColor: 'transparent',
+                borderWidth: 1,
+                borderColor: textDark,
               }}>
-              Login
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Signup')}
-            style={{
-              ...styles.Button,
-              backgroundColor: 'transparent',
-              borderWidth: 1,
-              borderColor: textDark,
-            }}>
-            <Text
-              style={{
-                color: lightDark,
-                fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
-                fontFamily:
-                  deviceTypeAndroid === 'Handset'
-                    ? 'Outfit-Medium'
-                    : 'Outfit-Bold',
-              }}>
-              SignUp
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Text
+                style={{
+                  color: lightDark,
+                  fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
+                  fontFamily:
+                    deviceTypeAndroid === 'Handset'
+                      ? 'Outfit-Medium'
+                      : 'Outfit-Bold',
+                }}>
+                SignUp
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <Text style={styles.socialTitle}>Or via social media</Text>
-        <View style={styles.socialContainer}>
-          <TouchableOpacity>
-            <MaterialIcons
-              name="facebook"
-              color={colorFb}
-              size={deviceTypeAndroid === 'Handset' ? Size * 1.4 : Size * 2}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.socialIcon}>
-            <Ionicons
-              name="logo-google"
-              color={bgLight}
-              size={deviceTypeAndroid === 'Handset' ? Size - 5 : Size}
-              style={{borderRadius: 50}}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{...styles.socialIcon, backgroundColor: bgPrimary}}>
-            <FontAwesome5
-              name="linkedin-in"
-              color={bgLight}
-              size={deviceTypeAndroid === 'Handset' ? Size - 5 : Size}
-              style={{borderRadius: 50}}
-            />
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          <Text style={styles.socialTitle}>Or via social media</Text>
+          <View style={styles.socialContainer}>
+            <TouchableOpacity>
+              <MaterialIcons
+                name="facebook"
+                color={colorFb}
+                size={deviceTypeAndroid === 'Handset' ? Size * 1.4 : Size * 2}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity activeOpacity={1} style={styles.socialIcon}>
+              <Ionicons
+                name="logo-google"
+                color={bgLight}
+                size={deviceTypeAndroid === 'Handset' ? Size - 5 : Size}
+                style={{borderRadius: 50}}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={1}
+              style={{...styles.socialIcon, backgroundColor: bgPrimary}}>
+              <FontAwesome5
+                name="linkedin-in"
+                color={bgLight}
+                size={deviceTypeAndroid === 'Handset' ? Size - 5 : Size}
+                style={{borderRadius: 50}}
+              />
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 };
 

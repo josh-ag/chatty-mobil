@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   Alert,
-  useWindowDimensions,
   ImageBackground,
   StyleSheet,
 } from 'react-native';
@@ -17,8 +16,61 @@ import {
 } from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {deviceTypeAndroid} from '../utils/platforms';
-import {useSelector} from 'react-redux';
-import Animated, {SlideInLeft, SlideInUp} from 'react-native-reanimated';
+import Animated, {FadeIn, SlideInUp} from 'react-native-reanimated';
+
+const discussionList = [
+  {
+    title: 'Metaverse',
+    key: 'Meta',
+    poster: require('../assets/images/meta.jpg'),
+    tags: [],
+    isPrivate: false,
+    activeMembers: 898,
+    totalMembers: 10120,
+    description: '',
+  },
+  {
+    title: 'AI',
+    key: 'AI',
+    poster: require('../assets/images/ai.jpg'),
+    tags: [],
+    status: '',
+    isPrivate: false,
+    activeMembers: 233,
+    totalMembers: 800,
+    description: '',
+  },
+  {
+    title: 'BlockChain',
+    key: 'blockchain',
+    poster: require('../assets/images/blockchain.jpg'),
+    tags: [],
+    isPrivate: false,
+    activeMembers: 2091,
+    totalMembers: 3096,
+    description: '',
+  },
+  {
+    title: 'Aria Photography',
+    key: 'Aria Photography',
+    poster: require('../assets/images/aria_photography.jpg'),
+    tags: [],
+    isPrivate: false,
+    activeMembers: 105,
+    totalMembers: 500,
+    description: '',
+  },
+  {
+    title: 'Climate Change',
+    key: 'Climate Change',
+    poster: require('../assets/images/climate.jpg'),
+    tags: [],
+    isPrivate: false,
+    activeMembers: 10,
+    totalMembers: 45,
+    description: '',
+  },
+];
 
 //List Footer
 const ListFooterComponent = () => (
@@ -27,7 +79,6 @@ const ListFooterComponent = () => (
       style={[
         styles.description,
         {
-          fontWeight: '500',
           textAlign: 'center',
           marginBottom: 0,
           position: 'relative',
@@ -38,6 +89,7 @@ const ListFooterComponent = () => (
       I have interest on something else?
     </Text>
     <TouchableOpacity
+      activeOpacity={1}
       style={[
         styles.btnLogin,
         {
@@ -55,16 +107,14 @@ const ListFooterComponent = () => (
 
 //ListHeader
 const ListHeaderComponent = () => (
-  <View style={{paddingTop: 70}}>
+  <View>
     <Text style={styles.title}>Trending Discussions</Text>
   </View>
 );
 
-export const Categories = ({navigation, scrollY, handleGetUser}) => {
+export const Categories = ({navigation, scrollY}) => {
   const [refreshing, setRefreshing] = useState(false);
   const [endThreshholdReached, setEndThresholdReached] = useState(false);
-
-  const {discussionList, user} = useSelector(state => state.globals);
 
   const onImagePressed = isSelected => {
     // setCategory(isSelected);
@@ -92,56 +142,87 @@ export const Categories = ({navigation, scrollY, handleGetUser}) => {
   const _renderItem = props => {
     return (
       <Animated.View
-        entering={SlideInLeft.delay(props.index * 100)}
+        entering={FadeIn.delay(props.index * 100)}
         style={{
           width: '100%',
           justifyContent: 'center',
-          paddingVertical: 10,
+          marginBottom: 16,
         }}>
         <TouchableOpacity
-          style={{height: 200, borderRadius: 50}}
+          activeOpacity={1}
+          style={{height: 200}}
           onPress={() =>
-            navigation.navigate('Discussion', {id: props.item.key})
+            navigation.navigate('Discussion', {selected: props.item})
           }>
           <ImageBackground
+            imageStyle={{borderRadius: 20}}
+            resizeMode="contain"
             source={props.item.poster}
             style={{
               width: '100%',
               height: '100%',
-              borderRadius: 20,
             }}>
-            <Text style={styles.description}>#{props.item.title}</Text>
-            <TouchableOpacity
-              onPress={() => onImagePressed(props.item.title)}
+            <View
               style={{
-                position: 'absolute',
-                right: 30,
-                top: 20,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
+                width: '100%',
+                height: '100%',
+                padding: 16,
+                justifyContent: 'flex-end',
               }}>
-              <Text
-                style={{
-                  color: bgLight,
-                  fontSize: deviceTypeAndroid === 'Handset' ? 16 : 27,
-                  fontFamily:
-                    deviceTypeAndroid === 'Handset'
-                      ? 'Outfit-Medium'
-                      : 'Outfit-Bold',
-                  marginRight: 5,
-                }}>
-                Join
-              </Text>
               <View
                 style={{
-                  backgroundColor: '#3b5998',
-                  borderRadius: 50,
-                  padding: 5,
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'space-between',
+                  width: '100%',
                 }}>
-                <Ionicons name="add" size={Size / 1.5} color={bgLight} />
+                <Text style={styles.description}>#{props.item.title}</Text>
+                <View style={{justifyContent: 'center', alignItems: 'center'}}>
+                  <Text
+                    style={[
+                      styles.description,
+                      {fontFamily: 'Outfit-Black', fontSize: 16},
+                    ]}>
+                    active
+                  </Text>
+                  <Text style={[styles.description, {fontSize: 14}]}>
+                    @{props.item.activeMembers}/ {props.item.totalMembers}
+                  </Text>
+                </View>
               </View>
-            </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={1}
+                onPress={() => onImagePressed(props.item.title)}
+                style={{
+                  position: 'absolute',
+                  right: 30,
+                  top: 20,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Text
+                  style={{
+                    color: bgLight,
+                    fontSize: deviceTypeAndroid === 'Handset' ? 16 : 27,
+                    fontFamily:
+                      deviceTypeAndroid === 'Handset'
+                        ? 'Outfit-Medium'
+                        : 'Outfit-Bold',
+                    marginRight: 5,
+                  }}>
+                  Join
+                </Text>
+                <View
+                  style={{
+                    backgroundColor: '#3b5998',
+                    borderRadius: 50,
+                    padding: 5,
+                  }}>
+                  <Ionicons name="add" size={Size / 1.5} color={bgLight} />
+                </View>
+              </TouchableOpacity>
+            </View>
           </ImageBackground>
         </TouchableOpacity>
       </Animated.View>
@@ -161,17 +242,17 @@ export const Categories = ({navigation, scrollY, handleGetUser}) => {
       ListFooterComponent={endThreshholdReached && ListFooterComponent}
       ListFooterComponentStyle={{paddingTop: 20}}
       contentContainerStyle={{
-        paddingVertical: 20,
-        width: useWindowDimensions().width - 40,
+        width: '100%',
+        paddingHorizontal: 16,
         alignSelf: 'center',
+        paddingTop: 140,
+        paddingBottom: 100,
       }}
-      getItemLayout={(length, index) => ({length, index})}
+      // getItemLayout={(length, index) => ({length, index})}
       refreshing={refreshing}
       onRefresh={async () => {
         setRefreshing(true);
-        // setTimeout(() => setRefreshing(false), 5000);
-        await handleGetUser();
-
+        setTimeout(() => setRefreshing(false), 5000);
         setRefreshing(false);
       }}
       progressViewOffset={60}
@@ -188,21 +269,14 @@ export const Categories = ({navigation, scrollY, handleGetUser}) => {
 const styles = StyleSheet.create({
   description: {
     fontSize: deviceTypeAndroid === 'Handset' ? 20 : 27,
-    fontFamily: 'Outfit-Medium',
+    fontFamily: 'Outfit-Regular',
     color: bgSecondary,
-    marginBottom: 10,
-    position: 'absolute',
-    left: 20,
-    bottom: 0,
-    right: 0,
   },
 
   title: {
     fontSize: deviceTypeAndroid === 'Handset' ? 22 : 35,
-    fontFamily: 'Outfit-Bold',
+    fontFamily: 'Outfit-Regular',
     color: lightDark,
-    textAlign: 'center',
-    marginTop: 10,
   },
 
   btnLogin: {
