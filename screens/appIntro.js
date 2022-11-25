@@ -81,7 +81,7 @@ export const AppIntro = ({navigation}) => {
           padding: 5,
           marginRight: 25,
         }}>
-        <Ionicons name="checkmark" size={Size} />
+        <Ionicons name="checkmark" size={Size} color={bgLight} />
         <MyAppText
           style={{
             fontSize: 18,
@@ -124,6 +124,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   title: {
     fontSize: deviceTypeAndroid === 'Handset' ? 24 : 30,

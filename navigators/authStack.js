@@ -5,7 +5,9 @@ import {RegistrationScreen} from '../screens/registrationScreen';
 import {LoginScreen} from '../screens/loginScreen';
 import {SignUpScreen} from '../screens/signUp';
 import {PasswordResetScreen} from '../screens/passwordReset';
-import {SuccessConfirmation} from '../screens/successConfirmation';
+import {SuccessConfirmationScreen} from '../screens/successConfirmation';
+import {VerifyScreen} from '../screens/verify';
+import {NewPasswordScreen} from '../screens/newPassword';
 
 const Stack = createNativeStackNavigator();
 
@@ -21,6 +23,11 @@ export const AuthStack = () => (
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Signup" component={SignUpScreen} />
     <Stack.Screen name="PasswordReset" component={PasswordResetScreen} />
-    <Stack.Screen name="Confirmed" component={SuccessConfirmation} />
+    <Stack.Screen
+      name="ConfirmationSuccess"
+      component={SuccessConfirmationScreen}
+    />
+    <Stack.Screen name="NewPassword" component={NewPasswordScreen} />
+    <Stack.Screen name="Verify" component={VerifyScreen} />
   </Stack.Navigator>
 );

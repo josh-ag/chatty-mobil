@@ -1,74 +1,26 @@
-import React, {useMemo} from 'react';
-import {
-  SafeAreaView,
-  StatusBar,
-  useWindowDimensions,
-  TouchableOpacity,
-  Text,
-} from 'react-native';
-import Animated, {SlideInUp, SlideOutUp} from 'react-native-reanimated';
-import {bgLight, colorSuccess, Size} from '../utils/colors';
-import {deviceTypeAndroid} from '../utils/platforms';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import {Text} from 'react-native';
+import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
+import {bgLight, colorSuccess} from '../utils/colors';
 
-export const SuccessComponent = ({message, isError = !!message, setError}) => {
-  const {width, height} = useWindowDimensions();
-  //dismiss log @3s
-  // useMemo(() => setTimeout(() => setError(false), 3000), [setError]);
-
+export const RenderSuccess = ({success}) => {
   return (
-    <>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={isError ? colorSuccess : bgLight}
-      />
-      <SafeAreaView
-        style={{
-          flex: 1,
-          position: 'absolute',
-          zIndex: 100,
-        }}>
-        <Animated.View
-          entering={SlideInUp}
-          exiting={SlideOutUp}
-          style={{
-            height: 150,
-            width,
-            backgroundColor: colorSuccess,
-            position: 'absolute',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            paddingVertical: 16,
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 201,
-          }}>
-          <TouchableOpacity
-            style={{position: 'absolute', right: 50, top: 20}}
-            onPresponses={() => setError(null)}>
-            <Ionicons
-              name="close"
-              color={bgLight}
-              size={deviceTypeAndroid === 'Handset' ? Size / 1.2 : Size / 1.2}
-            />
-          </TouchableOpacity>
-          <Text
-            style={{
-              fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
-              fontFamily: 'Outfit-Medium',
-              color: bgLight,
-              textAlign: 'center',
-            }}>
-            <Ionicons
-              name="alert-circle"
-              size={deviceTypeAndroid === 'Handset' ? Size / 1.8 : Size / 1.2}
-              color={bgLight}
-            />{' '}
-            {message.toUpperCase()}
-          </Text>
-        </Animated.View>
-      </SafeAreaView>
-    </>
+    <Animated.View
+      entering={SlideInDown}
+      exiting={SlideOutDown}
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        marginTop: 100,
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colorSuccess,
+      }}>
+      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
+        {success}
+      </Text>
+    </Animated.View>
   );
 };

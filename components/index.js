@@ -1,5 +1,5 @@
-import {ErrorComponent} from './errors';
-import {SuccessComponent} from './success';
+import {RenderSuccess} from './success';
 import {MyAppText} from './text';
+import {RenderError} from './errors';
 
-export {ErrorComponent, SuccessComponent, MyAppText};
+export {RenderError, RenderSuccess, MyAppText};

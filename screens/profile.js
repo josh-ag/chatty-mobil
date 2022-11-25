@@ -7,14 +7,14 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  useWindowDimensions,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
 import {
   bgLight,
   bgPrimary,
   bgSecondary,
   colorDisabled,
-  colorGoogle,
   lightDark,
   offset,
   Size,
@@ -22,32 +22,20 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {deviceTypeAndroid} from '../utils/platforms';
 import {useProfileQuery} from '../feature/services/query';
-import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
+import Animated, {FadeIn, FadeOut} from 'react-native-reanimated';
+import {useDispatch} from 'react-redux';
+import {logOut} from '../feature/reducers/authReducer';
+import userIcon from '../assets/images/user.png';
+import {RenderError} from '../components';
 
 export const ProfileScreen = ({navigation}) => {
-  const {data, error} = useProfileQuery();
+  const {data, error, isLoading} = useProfileQuery();
 
-  const RenderError = () => (
-    <Animated.View
-      entering={SlideInDown}
-      exiting={SlideOutDown}
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        marginTop: 100,
-        padding: 20,
-        zIndex: 200,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colorGoogle,
-      }}>
-      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
-        {error?.error.split(':')[1]}
-      </Text>
-    </Animated.View>
-  );
+  const dispatch = useDispatch();
+
+  if (error && error?.data === 'Unauthorized') {
+    dispatch(logOut());
+  }
 
   return (
     <>
@@ -57,9 +45,10 @@ export const ProfileScreen = ({navigation}) => {
         translucent
       />
       <SafeAreaView style={{flex: 1, backgroundColor: bgLight}}>
-        {error && <RenderError />}
         <ScrollView
-          style={[styles.container]}
+          contentContainerStyle={{
+            minHeight: '100%',
+          }}
           showsVerticalScrollIndicator={false}>
           <View
             style={{
@@ -67,9 +56,8 @@ export const ProfileScreen = ({navigation}) => {
               paddingHorizontal: 20,
               flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: 16,
-              paddingTop: offset,
+              paddingTop: offset + 10,
+              paddingBottom: 8,
             }}>
             <TouchableOpacity
               activeOpacity={1}
@@ -78,83 +66,111 @@ export const ProfileScreen = ({navigation}) => {
               <Ionicons name="chevron-back" color={bgPrimary} size={Size} />
               <Text style={styles.backText}>Back</Text>
             </TouchableOpacity>
-            <TouchableOpacity activeOpacity={1}>
-              <Text
-                style={{
-                  fontFamily: 'Outfit-Medium',
-                  fontSize: 18,
-                  color: bgPrimary,
-                }}>
-                Edit
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.profileHeader}>
-            <View style={styles.accAvatar}>
-              <Ionicons name="person" color={lightDark} size={Size * 1.2} />
-            </View>
-            <TouchableOpacity
-              activeOpacity={1}
-              style={{
-                position: 'absolute',
-                right: 0,
-                left: 0,
-                top: 120,
-                bottom: 0,
-                transform: [{translateX: useWindowDimensions().width / 2 + 35}],
-              }}>
-              <Ionicons name="camera" color={colorDisabled} size={Size} />
-            </TouchableOpacity>
           </View>
 
-          <View style={{flex: 1}}>
+          {isLoading ? (
             <View
-              style={[
-                StyleSheet.absoluteFillObject,
-                {
-                  backgroundColor: bgSecondary,
-                },
-              ]}
-            />
+              style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+              <ActivityIndicator color={bgPrimary} />
+              <Text style={[styles.titleMd, {marginTop: 8}]}>
+                Please wait....
+              </Text>
+            </View>
+          ) : error ? (
             <View
               style={{
                 flex: 1,
-                borderTopLeftRadius: 75,
-                backgroundColor: bgLight,
+                paddingHorizontal: 20,
+                alignItems: 'center',
+                justifyContent: 'center',
               }}>
-              <View
-                style={{
-                  width: '90%',
-                  alignSelf: 'center',
-                  marginTop: 20,
-                  paddingBottom: 20,
-                }}>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>{data?.user.firstname}</Text>
-                  <Text style={styles.labelTitle}>Firstname</Text>
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>{data?.user.lastname}</Text>
-                  <Text style={styles.labelTitle}>Lastname</Text>
-                </View>
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>{data?.user.username}</Text>
-                  <Text style={styles.labelTitle}>Username</Text>
-                </View>
-
-                <View style={styles.inputContainer}>
-                  <Text style={styles.label}>{data?.user.email}</Text>
-                  <Text style={styles.labelTitle}>Email</Text>
-                </View>
-
-                <View style={[styles.inputContainer, {minHeight: 200}]}>
-                  <Text style={styles.label}>{data?.user.bios}</Text>
-                  <Text style={styles.labelTitle}>Bios</Text>
-                </View>
-              </View>
+              <Text style={styles.titleLg}>Something Went Wrong</Text>
+              <Text style={styles.titleMd}>
+                We're having issue loading this page
+              </Text>
+              <RenderError
+                error={error?.message || error?.error.split(':')[1]}
+              />
             </View>
-          </View>
+          ) : (
+            <>
+              <View style={styles.profileHeader}>
+                <View style={styles.accAvatar}>
+                  <Image
+                    source={
+                      data?.user?.profilePicture
+                        ? {uri: data?.user?.profilePicture?.url}
+                        : userIcon
+                    }
+                    resizeMode="cover"
+                    style={styles.accAvatar}
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('ProfileEdit')}
+                  activeOpacity={1}
+                  style={{marginTop: offset, marginLeft: 8}}>
+                  <Ionicons
+                    name="create-sharp"
+                    color={bgPrimary}
+                    size={Size - 6}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <Animated.View
+                style={{flex: 1}}
+                entering={FadeIn}
+                exiting={FadeOut}>
+                <View
+                  style={[
+                    StyleSheet.absoluteFillObject,
+                    {
+                      backgroundColor: bgSecondary,
+                    },
+                  ]}
+                />
+                <View
+                  style={{
+                    flex: 1,
+                    borderTopLeftRadius: 75,
+                    backgroundColor: bgLight,
+                  }}>
+                  <View
+                    style={{
+                      width: '90%',
+                      alignSelf: 'center',
+                      marginTop: 20,
+                      paddingBottom: 20,
+                    }}>
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>{data?.user.firstname}</Text>
+                      <Text style={styles.labelTitle}>Firstname</Text>
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>{data?.user.lastname}</Text>
+                      <Text style={styles.labelTitle}>Lastname</Text>
+                    </View>
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>{data?.user.username}</Text>
+                      <Text style={styles.labelTitle}>Username</Text>
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.label}>{data?.user.email}</Text>
+                      <Text style={styles.labelTitle}>Email</Text>
+                    </View>
+
+                    <View style={[styles.inputContainer, {minHeight: 200}]}>
+                      <Text style={styles.label}>{data?.user.bios}</Text>
+                      <Text style={styles.labelTitle}>Bios</Text>
+                    </View>
+                  </View>
+                </View>
+              </Animated.View>
+            </>
+          )}
         </ScrollView>
       </SafeAreaView>
     </>
@@ -163,11 +179,10 @@ export const ProfileScreen = ({navigation}) => {
 
 const styles = StyleSheet.create({
   backText: {
-    fontFamily: 'Outfit-Light',
+    fontFamily: 'Outfit-Regular',
     fontSize: deviceTypeAndroid === 'Handset' ? 18 : 30,
     color: bgPrimary,
   },
-
   profileHeader: {
     height: 200,
     flexDirection: 'row',
@@ -178,15 +193,27 @@ const styles = StyleSheet.create({
   },
 
   accAvatar: {
-    width: 73,
-    height: 73,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 70,
     borderColor: bgLight,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  titleLg: {
+    textTransform: 'capitalize',
+    color: lightDark,
+    fontFamily: 'Outfit-Medium',
+    fontSize: 21,
+    fontWeight: '800',
+  },
 
+  titleMd: {
+    fontFamily: 'Outfit-Light',
+    fontSize: 18,
+    color: lightDark,
+  },
   inputContainer: {
     marginTop: 20,
     padding: 16,

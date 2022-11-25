@@ -3,18 +3,18 @@ import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 
 export const Authenticate = createAsyncThunk('/auth', async (_, thunkAPI) => {
   try {
-    // await AsyncStorage.clear();
     const response = await AsyncStorage.getItem('@auth_token');
+    const loginId = await AsyncStorage.getItem('@loginId');
     if (response) {
       return {
         isAuthenticated: true,
+        loginId: loginId,
       };
     } else {
       await AsyncStorage.removeItem('@auth_token');
       return {isAuthenticated: false};
     }
   } catch (error) {
-    // await AsyncStorage.clear();
     const message = error;
     console.log('ErrorGettingAuthToken: ', message);
 
@@ -45,12 +45,6 @@ const initialState = {
 export const authSlice = createSlice({
   name: 'auth',
   initialState,
-  // reducers: {
-  //   reset: state => {
-  //     state.Authenticate = false;
-  //     state.loginId = null;
-  //   },
-  // },
   extraReducers: builder => {
     builder
       .addCase(Authenticate.pending, state => {
@@ -60,12 +54,11 @@ export const authSlice = createSlice({
         console.log('Login Payload: ', action.payload);
         state.isLoading = false;
         state.isAuthenticated = action.payload.isAuthenticated;
-        state.loginId = null;
+        state.loginId = action.payload.loginId;
       })
-      .addCase(Authenticate.rejected, (state, action) => {
+      .addCase(Authenticate.rejected, state => {
         state.isLoading = false;
         state.isAuthenticated = false;
-        state.loginId = null;
       })
       //logout
       .addCase(logOut.pending, state => {
@@ -74,8 +67,8 @@ export const authSlice = createSlice({
       })
       .addCase(logOut.fulfilled, state => {
         state.isLoading = false;
-        state.loginId = null;
         state.isAuthenticated = false;
+        state.loginId = null;
       })
       .addCase(logOut.rejected, state => {
         state.isLoading = false;

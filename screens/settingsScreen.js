@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {
   SafeAreaView,
   StatusBar,
@@ -7,8 +7,8 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import {
   bgLight,
@@ -21,49 +21,36 @@ import {
   offset,
 } from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {deviceTypeAndroid} from '../utils/platforms';
 import {useProfileQuery} from '../feature/services/query';
-import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  SlideInDown,
+  SlideOutDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import {logOut} from '../feature/reducers/authReducer';
-import {useDispatch} from 'react-redux';
-
-const {width} = Dimensions.get('window');
+import {useDispatch, useSelector} from 'react-redux';
+import userIcon from '../assets/images/user.png';
+import {RenderError} from '../components';
 
 export const SettingsScreen = ({navigation}) => {
-  const {data, error, isLoading} = useProfileQuery();
-  const [message, setMessage] = useState(false);
-  // const [isError, setIsError] = useState(error);
+  const {loginId} = useSelector(state => state.auth);
+  const {data, error, isLoading} = useProfileQuery(loginId);
 
   const dispatch = useDispatch();
+  const spinner = useSharedValue(0);
+
+  const spinnerStyle = useAnimatedStyle(() => ({
+    transform: [{rotate: `${spinner.value}deg`}],
+  }));
 
   if (error && error?.data === 'Unauthorized') {
     dispatch(logOut());
   }
 
-  // console.log(isLoading);
-  // console.log(error);
-
-  const RenderError = () => (
-    <Animated.View
-      entering={SlideInDown}
-      exiting={SlideOutDown}
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        marginTop: 100,
-        padding: 20,
-        zIndex: 200,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colorGoogle,
-      }}>
-      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
-        {error?.error.split(':')[1]}
-      </Text>
-    </Animated.View>
-  );
   return (
     <>
       <StatusBar
@@ -73,7 +60,6 @@ export const SettingsScreen = ({navigation}) => {
       />
 
       <SafeAreaView style={{flex: 1, backgroundColor: bgLight}}>
-        {error && <RenderError />}
         <ScrollView
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}>
@@ -98,41 +84,129 @@ export const SettingsScreen = ({navigation}) => {
               />
             </TouchableOpacity>
           </View>
-
-          <View style={{paddingHorizontal: 16, flex: 1}}>
-            <View style={styles.accountContainer}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}>
-                <Text style={styles.titleLg}>Account</Text>
-
-                {isLoading && <ActivityIndicator color={bgPrimary} />}
-              </View>
-              {data?.user && (
-                <TouchableOpacity
-                  activeOpacity={1}
+          {isLoading ? (
+            <View
+              style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+              <ActivityIndicator color={bgPrimary} />
+              <Text style={[styles.titleMd, {marginTop: 8}]}>
+                Please wait....
+              </Text>
+            </View>
+          ) : error ? (
+            <View
+              style={{
+                flex: 1,
+                paddingHorizontal: 20,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+              <Text style={styles.titleLg}>Something Went Wrong</Text>
+              <Text style={styles.titleMd}>
+                We're having issue loading this page
+              </Text>
+              <RenderError
+                error={error?.message || error?.error.split(':')[1]}
+              />
+            </View>
+          ) : (
+            <Animated.View
+              style={{paddingHorizontal: 16, flex: 1}}
+              entering={FadeIn}
+              exiting={FadeOut}>
+              <View style={styles.accountContainer}>
+                <View
                   style={{
                     flexDirection: 'row',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginVertical: 16,
-                  }}
-                  onPress={() => navigation.navigate('Profile')}>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <View style={styles.accountImage}>
-                      <Ionicons name="person" size={Size} color={bgPrimary} />
-                    </View>
-                    <View style={{marginLeft: 16, alignItems: 'center'}}>
-                      <Text style={styles.titleLg}>{data?.user?.username}</Text>
-                      <Text style={styles.description}>{data?.user?.bios}</Text>
-                    </View>
-                  </View>
-
+                  }}>
+                  <Text style={styles.titleLg}>Account</Text>
+                </View>
+                {data?.user && (
                   <TouchableOpacity
+                    activeOpacity={1}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginVertical: 16,
+                    }}
                     onPress={() => navigation.navigate('Profile')}>
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <View style={styles.accountImage}>
+                        <Image
+                          source={
+                            data?.user?.profilePicture
+                              ? {uri: data?.user?.profilePicture?.url}
+                              : userIcon
+                          }
+                          resizeMode="cover"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            borderRadius: 20,
+                          }}
+                        />
+                      </View>
+                      <View style={{marginLeft: 16, alignItems: 'center'}}>
+                        <Text style={styles.titleLg}>
+                          {data?.user?.username}
+                        </Text>
+                        <Text style={styles.description}>
+                          {data?.user?.bios}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('Profile')}>
+                      <Ionicons
+                        name="chevron-forward"
+                        color={bgPrimary}
+                        size={Size}
+                      />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                )}
+
+                {!data?.user?.verified && (
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      textAlign: 'center',
+                      color: colorGoogle,
+                      marginTop: 8,
+                    }}>
+                    You account is not verified
+                  </Text>
+                )}
+
+                {!data?.user?.verified && (
+                  <TouchableOpacity
+                    activeOpacity={1}
+                    style={{alignSelf: 'center'}}
+                    onPress={() => navigation.navigate('Verify')}>
+                    <Text style={[styles.backText, {color: colorFb}]}>
+                      Verify Now
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* app settings// */}
+              <View
+                style={[
+                  styles.accountContainer,
+                  {marginTop: 16, borderRadius: 20},
+                ]}>
+                <Text style={styles.titleLg}>App Settings</Text>
+
+                <TouchableOpacity style={styles.settingsList} activeOpacity={1}>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Ionicons name="settings" color={bgPrimary} size={Size} />
+                    <Text style={styles.listText}>Settings</Text>
+                  </View>
+                  <TouchableOpacity>
                     <Ionicons
                       name="chevron-forward"
                       color={bgPrimary}
@@ -140,108 +214,73 @@ export const SettingsScreen = ({navigation}) => {
                     />
                   </TouchableOpacity>
                 </TouchableOpacity>
-              )}
+                <TouchableOpacity style={styles.settingsList} activeOpacity={1}>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Ionicons name="globe" color={bgPrimary} size={Size} />
+                    <Text style={styles.listText}>Language</Text>
+                  </View>
 
-              {data?.user.emailVerified && (
-                <Text
-                  style={{
-                    fontSize: 16,
-                    textAlign: 'center',
-                    color: colorFb,
-                    marginTop: 8,
-                  }}>
-                  You need to verify your email
-                </Text>
-              )}
-            </View>
-
-            {/* app settings// */}
-            <View
-              style={[
-                styles.accountContainer,
-                {marginTop: 16, borderRadius: 20},
-              ]}>
-              <Text style={styles.titleLg}>App Settings</Text>
-
-              <TouchableOpacity style={styles.settingsList} activeOpacity={1}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <Ionicons name="settings" color={bgPrimary} size={Size} />
-                  <Text style={styles.listText}>Settings</Text>
-                </View>
-                <TouchableOpacity>
                   <Ionicons
                     name="chevron-forward"
                     color={bgPrimary}
                     size={Size}
                   />
                 </TouchableOpacity>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.settingsList} activeOpacity={1}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <Ionicons name="globe" color={bgPrimary} size={Size} />
-                  <Text style={styles.listText}>Language</Text>
-                </View>
 
-                <Ionicons
-                  name="chevron-forward"
-                  color={bgPrimary}
-                  size={Size}
-                />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.settingsList} activeOpacity={1}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <Ionicons
-                    name="notifications"
-                    color={bgPrimary}
-                    size={Size}
-                  />
-                  <Text style={styles.listText}>Notification</Text>
-                </View>
-                <TouchableOpacity>
-                  <Ionicons
-                    name="chevron-forward"
-                    color={bgPrimary}
-                    size={Size}
-                  />
+                <TouchableOpacity style={styles.settingsList} activeOpacity={1}>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Ionicons
+                      name="notifications"
+                      color={bgPrimary}
+                      size={Size}
+                    />
+                    <Text style={styles.listText}>Notification</Text>
+                  </View>
+                  <TouchableOpacity>
+                    <Ionicons
+                      name="chevron-forward"
+                      color={bgPrimary}
+                      size={Size}
+                    />
+                  </TouchableOpacity>
                 </TouchableOpacity>
-              </TouchableOpacity>
 
-              <TouchableOpacity style={styles.settingsList} activeOpacity={1}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <Ionicons name="help" color={bgPrimary} size={Size} />
-                  <Text style={styles.listText}>Help</Text>
-                </View>
-                <TouchableOpacity>
-                  <Ionicons
-                    name="chevron-forward"
-                    color={bgPrimary}
-                    size={Size}
-                  />
+                <TouchableOpacity style={styles.settingsList} activeOpacity={1}>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Ionicons name="help" color={bgPrimary} size={Size} />
+                    <Text style={styles.listText}>Help</Text>
+                  </View>
+                  <TouchableOpacity>
+                    <Ionicons
+                      name="chevron-forward"
+                      color={bgPrimary}
+                      size={Size}
+                    />
+                  </TouchableOpacity>
                 </TouchableOpacity>
-              </TouchableOpacity>
-            </View>
-          </View>
+              </View>
+
+              <View
+                style={{
+                  alignItems: 'center',
+                  alignSelf: 'center',
+                  zIndex: 1,
+                  marginTop: offset * 2,
+                  marginBottom: offset,
+                }}>
+                <TouchableOpacity
+                  onPress={() => dispatch(logOut())}
+                  activeOpacity={1}
+                  style={{flexDirection: 'row'}}>
+                  <Text style={[styles.titleMd, {color: colorGoogle}]}>
+                    Logout
+                  </Text>
+                  <Ionicons name="log-out" size={24} color={colorGoogle} />
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          )}
         </ScrollView>
-        <View
-          style={{
-            alignItems: 'center',
-            alignSelf: 'center',
-            marginBottom: 16,
-            position: 'absolute',
-            zIndex: 1,
-            bottom: 0,
-            left: 0,
-            right: 0,
-          }}>
-          <TouchableOpacity
-            onPress={() => dispatch(logOut())}
-            activeOpacity={1}
-            style={{flexDirection: 'row'}}>
-            <Text style={[styles.titleMd, {color: colorGoogle}]}>Logout</Text>
-            <Ionicons name="log-out" size={24} color={colorGoogle} />
-          </TouchableOpacity>
-        </View>
       </SafeAreaView>
     </>
   );
@@ -251,11 +290,12 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: bgLight,
     width: '100%',
+    minHeight: '100%',
   },
 
   backText: {
     fontFamily: 'Outfit-Medium',
-    fontSize: deviceTypeAndroid === 'Handset' ? 18 : 30,
+    fontSize: 16,
     color: bgPrimary,
   },
 
@@ -302,7 +342,7 @@ const styles = StyleSheet.create({
   },
 
   titleMd: {
-    fontFamily: 'Outfit-Medium',
+    fontFamily: 'Outfit-Light',
     fontSize: 18,
     color: lightDark,
   },

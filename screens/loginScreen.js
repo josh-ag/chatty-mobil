@@ -17,144 +17,96 @@ import {
   colorGoogle,
   Size,
   colorDisabled,
-  colorSuccess,
   offset,
 } from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import {useDispatch} from 'react-redux';
 import {deviceTypeAndroid} from '../utils/platforms';
 import {useLoginMutation} from '../feature/services/query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Authenticate} from '../feature/reducers/authReducer';
-import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
+import Animated, {FadeIn, FadeOut} from 'react-native-reanimated';
+import {RenderError, RenderSuccess} from '../components';
 
+//LOGIN SCREEN
 export const LoginScreen = ({navigation}) => {
+  /*
+  ********************************
+  //Internal State
+  ********************************
+  */
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [visible, setVisible] = useState(true);
-  const [error, setError] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [login] = useLoginMutation();
 
+  const [login] = useLoginMutation();
   const dispatch = useDispatch();
 
   const emailPattern =
     /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
   const handleLogin = async () => {
-    try {
-      //reset error/loading state
-      setIsLoading(true);
-      setError(false);
+    //reset error/loading state
+    setIsLoading(true);
+    setError(false);
 
+    try {
       if (!email || !password) {
         setIsLoading(false);
-        return setError('Missing Parameter');
+        setError('Some Field Is Empty');
+        return;
       }
-
       if (email && !emailPattern.test(email)) {
         setIsLoading(false);
-        return setError('Invalid email address');
+        setError('Invalid email address');
+        return;
       }
 
       const loginData = {email, password};
       let {data, error} = await login(loginData);
 
       if (error) {
+        // console.log(error);
         setIsLoading(false);
-        return setError(error?.data.message || error.error);
-      }
-
-      if (data) {
-        setSuccess(data.message);
+        setError(error?.data?.message || error?.error.split(':')[1]);
+      } else {
+        setSuccess(data?.message);
         await AsyncStorage.setItem('@auth_token', data?.token);
+        await AsyncStorage.setItem('@loginId', data?.id);
 
         setTimeout(() => dispatch(Authenticate()), 1000);
       }
     } catch (err) {
       setIsLoading(false);
       setError(err.message);
-      console.log('Error: ', err);
+      // console.log('Error: ', err);
     }
   };
 
   const iconName = visible ? 'eye-off' : 'eye';
 
-  const RenderError = () => (
-    <Animated.View
-      entering={SlideInDown}
-      exiting={SlideOutDown}
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        marginTop: 100,
-        padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colorGoogle,
-      }}>
-      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
-        {error}
-      </Text>
-    </Animated.View>
-  );
-
-  const RenderSuccess = () => (
-    <Animated.View
-      entering={SlideInDown}
-      exiting={SlideOutDown}
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        marginTop: 100,
-        padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colorSuccess,
-      }}>
-      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
-        {success}
-      </Text>
-    </Animated.View>
-  );
+  //clear Error @4mins
+  if (error) {
+    setTimeout(() => setError(false), 4000);
+  }
 
   return (
     <>
       <StatusBar
+        showHideTransition={'slide'}
         barStyle="light-content"
         backgroundColor={'transparent'}
         translucent
       />
       <SafeAreaView style={{flex: 1, backgroundColor: bgLight}}>
-        {isLoading && (
-          <Animated.View
-            style={{
-              alignSelf: 'center',
-              position: 'absolute',
-              marginTop: 100,
-              left: 0,
-              right: 0,
-              top: 0,
-              zIndex: 10,
-            }}>
-            <ActivityIndicator
-              animating={isLoading || false}
-              color={bgPrimary}
-              hidesWhenStopped={true}
-              size="small"
-            />
-          </Animated.View>
-        )}
-        {error && <RenderError />}
-        {success && <RenderSuccess />}
+        {error && <RenderError error={error} />}
+        {success && <RenderSuccess success={success} />}
         <ScrollView
+          bounces={false}
           contentContainerStyle={[
             styles.contentsContainer,
             {paddingTop: offset},
@@ -165,6 +117,7 @@ export const LoginScreen = ({navigation}) => {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
+              alignSelf: 'flex-start',
             }}
             onPress={navigation.goBack}>
             <Ionicons name="chevron-back" color={bgPrimary} size={Size} />
@@ -186,17 +139,18 @@ export const LoginScreen = ({navigation}) => {
                   left: 0,
                   top: deviceTypeAndroid === 'Handset' ? 16 : 8,
                 }}>
-                <MaterialIcons
-                  name="alternate-email"
+                <Ionicons
+                  name="at"
                   color={colorDisabled}
                   size={deviceTypeAndroid === 'Handset' ? Size : Size * 1.5}
                 />
               </TouchableOpacity>
               <TextInput
+                keyboardType="email-address"
                 placeholderTextColor={colorDisabled}
-                placeholder="Username/Email"
+                placeholder="Email"
                 style={styles.textInput}
-                defaultValue={email}
+                value={email}
                 onChangeText={mail => setEmail(mail)}
               />
             </View>
@@ -209,17 +163,18 @@ export const LoginScreen = ({navigation}) => {
                   left: 0,
                   top: deviceTypeAndroid === 'Handset' ? 16 : 8,
                 }}>
-                <MaterialIcons
-                  name="vpn-key"
+                <Ionicons
+                  name="key"
                   color={colorDisabled}
                   size={deviceTypeAndroid === 'Handset' ? Size : Size * 1.5}
                 />
               </TouchableOpacity>
               <TextInput
+                keyboardType="password"
                 placeholderTextColor={colorDisabled}
                 placeholder="Password"
                 style={styles.textInput}
-                defaultValue={password}
+                value={password}
                 onChangeText={passwd => setPassword(passwd)}
                 secureTextEntry={visible}
               />
@@ -240,10 +195,37 @@ export const LoginScreen = ({navigation}) => {
             </View>
 
             <TouchableOpacity
+              disabled={isLoading || false}
               activeOpacity={1}
               onPress={handleLogin}
-              style={styles.btnLogin}>
-              <Text style={styles.btnLoginText}>Sign-In</Text>
+              style={[
+                styles.btnLogin,
+                {
+                  backgroundColor: isLoading ? colorDisabled : bgPrimary,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+              ]}>
+              <Text
+                style={[
+                  styles.btnLoginText,
+                  {color: isLoading ? lightDark : bgLight},
+                ]}>
+                Sign-In
+              </Text>
+
+              {isLoading && (
+                <Animated.View entering={FadeIn} exiting={FadeOut}>
+                  <ActivityIndicator
+                    style={{marginLeft: 12}}
+                    animating={isLoading || false}
+                    color={bgPrimary}
+                    hidesWhenStopped={true}
+                    size="small"
+                  />
+                </Animated.View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={1}
@@ -263,14 +245,14 @@ export const LoginScreen = ({navigation}) => {
             <TouchableOpacity
               activeOpacity={1}
               style={[styles.btnSocial, {backgroundColor: bgPrimary}]}>
-              <FontAwesome5 name="facebook-f" color={bgLight} size={Size} />
+              <FontAwesome5 name="facebook-f" color={bgLight} size={Size - 8} />
             </TouchableOpacity>
 
             <TouchableOpacity activeOpacity={1} style={styles.btnSocial}>
               <Ionicons
                 name="logo-google"
                 color={bgLight}
-                size={Size}
+                size={Size - 8}
                 style={{borderRadius: 50}}
               />
             </TouchableOpacity>
@@ -280,7 +262,7 @@ export const LoginScreen = ({navigation}) => {
               <FontAwesome5
                 name="linkedin-in"
                 color={bgLight}
-                size={Size}
+                size={Size - 8}
                 style={{borderRadius: 50}}
               />
             </TouchableOpacity>
@@ -300,7 +282,6 @@ export const LoginScreen = ({navigation}) => {
                 style={[
                   styles.textInfo,
                   {
-                    fontWeight: 'bold',
                     color: bgPrimary,
                   },
                 ]}>
@@ -344,7 +325,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colorDisabled,
     marginBottom: 10,
     fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
-    fontFamily: 'Outfit-Medium',
+    fontFamily: 'Outfit-Light',
     color: lightDark,
     paddingLeft: deviceTypeAndroid === 'Handset' ? 40 : 55,
   },
@@ -355,7 +336,6 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 50,
     marginTop: 20,
-    backgroundColor: bgPrimary,
   },
 
   btnLoginText: {
@@ -367,18 +347,19 @@ const styles = StyleSheet.create({
   },
 
   forgetPasswd: {
-    fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
-    fontFamily: 'Outfit-Medium',
+    fontSize: 18,
+    fontFamily: 'Outfit-Regular',
     textAlign: 'center',
     color: lightDark,
     marginTop: 10,
   },
 
   btnSocial: {
-    width: deviceTypeAndroid === 'Handset' ? 35 : 50,
-    height: deviceTypeAndroid === 'Handset' ? 35 : 50,
-    borderRadius: 50,
+    width: 35,
+    height: 35,
+    borderRadius: 20,
     backgroundColor: colorGoogle,
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 8,
@@ -387,8 +368,8 @@ const styles = StyleSheet.create({
 
   textInfo: {
     textAlign: 'center',
-    fontSize: deviceTypeAndroid === 'Handset' ? 16 : 24,
-    fontFamily: 'Outfit-Medium',
+    fontSize: 18,
+    fontFamily: 'Outfit-Regular',
     color: lightDark,
   },
 });

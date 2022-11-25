@@ -100,20 +100,20 @@ export const RegistrationScreen = ({navigation}) => {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.socialTitle}>Or via social media</Text>
+          <Text style={[styles.socialTitle, {fontFamily: 'Outfit-Light'}]}>
+            Alternatively with
+          </Text>
           <View style={styles.socialContainer}>
-            <TouchableOpacity>
-              <MaterialIcons
-                name="facebook"
-                color={colorFb}
-                size={deviceTypeAndroid === 'Handset' ? Size * 1.4 : Size * 2}
-              />
+            <TouchableOpacity
+              activeOpacity={1}
+              style={{...styles.socialIcon, backgroundColor: bgPrimary}}>
+              <FontAwesome5 name="facebook-f" color={bgLight} size={Size - 8} />
             </TouchableOpacity>
             <TouchableOpacity activeOpacity={1} style={styles.socialIcon}>
               <Ionicons
                 name="logo-google"
                 color={bgLight}
-                size={deviceTypeAndroid === 'Handset' ? Size - 5 : Size}
+                size={Size - 6}
                 style={{borderRadius: 50}}
               />
             </TouchableOpacity>
@@ -123,7 +123,7 @@ export const RegistrationScreen = ({navigation}) => {
               <FontAwesome5
                 name="linkedin-in"
                 color={bgLight}
-                size={deviceTypeAndroid === 'Handset' ? Size - 5 : Size}
+                size={Size - 6}
                 style={{borderRadius: 50}}
               />
             </TouchableOpacity>
@@ -201,13 +201,14 @@ const styles = StyleSheet.create({
     marginRight: 20,
   },
   socialIcon: {
-    width: deviceTypeAndroid === 'Handset' ? 36 : 45,
-    height: deviceTypeAndroid === 'Handset' ? 36 : 45,
-    borderRadius: 50,
+    width: 35,
+    height: 35,
+    borderRadius: 20,
     backgroundColor: colorGoogle,
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 10,
+    marginHorizontal: 8,
     marginRight: 10,
   },
   socialContainer: {

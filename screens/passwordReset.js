@@ -8,35 +8,32 @@ import {
   StyleSheet,
   ImageBackground,
   ActivityIndicator,
-  Dimensions,
   SafeAreaView,
   ScrollView,
 } from 'react-native';
-
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 import {
   bgLight,
   lightDark,
   colorDisabled,
   bgPrimary,
   Size,
-  bgSecondary,
-  colorGoogle,
   offset,
 } from '../utils/colors';
 import {deviceTypeAndroid} from '../utils/platforms';
 import {useResetPasswordMutation} from '../feature/services/query';
+import {RenderError, RenderSuccess} from '../components';
 
 export const PasswordResetScreen = ({navigation}) => {
   /*
     *********************************
-    RESET PASSWORD STATE
+    INTERNAL STATE
     *********************************
-    */
+*/
   const [resetEmail, setResetEmail] = useState('');
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(null);
   const [resetPassword] = useResetPasswordMutation();
 
   const emailPattern =
@@ -47,12 +44,14 @@ export const PasswordResetScreen = ({navigation}) => {
 
     if (!resetEmail) {
       setIsLoading(false);
-      return setError('Missing parameter');
+      setError('Field empty');
+      return;
     }
 
     if (!emailPattern.test(resetEmail)) {
       setIsLoading(false);
-      return setError('Invalid email address');
+      setError('Invalid email address');
+      return;
     }
 
     try {
@@ -61,60 +60,29 @@ export const PasswordResetScreen = ({navigation}) => {
       if (error) {
         console.log('Error: ', error);
         setIsLoading(false);
-        return setError(error.data.message || error?.error || error?.message);
+
+        return setError(error?.data?.message || error?.error.split(':')[1]);
       }
 
       if (data) {
-        console.log(data);
+        setResetEmail('');
+        setSuccess(data?.message);
+        setIsLoading(false);
+        setTimeout(() => navigation.navigate('NewPassword'), 4000);
       }
     } catch (err) {
       console.log(err);
     }
   };
 
-  const {width} = Dimensions.get('window');
-
-  const RenderError = () => (
-    <Animated.View
-      entering={SlideInDown}
-      exiting={SlideOutDown}
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        marginTop: 100,
-        padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colorGoogle,
-      }}>
-      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
-        {error}
-      </Text>
-    </Animated.View>
-  );
-
-  const RenderSuccess = () => (
-    <Animated.View
-      entering={SlideInDown}
-      exiting={SlideOutDown}
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        marginTop: 100,
-        padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colorGoogle,
-      }}>
-      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
-        {success}
-      </Text>
-    </Animated.View>
-  );
+  //reset Error state
+  if (error) {
+    setTimeout(() => setError(false), 4000);
+  }
+  //reset success state
+  if (success) {
+    setTimeout(() => setSuccess(false), 4000);
+  }
 
   return (
     <>
@@ -123,7 +91,6 @@ export const PasswordResetScreen = ({navigation}) => {
         translucent
         backgroundColor={'transparent'}
       />
-
       <SafeAreaView style={{flex: 1}}>
         <ImageBackground
           source={require('../assets/images/bgSecurity.jpg')}
@@ -133,29 +100,8 @@ export const PasswordResetScreen = ({navigation}) => {
             width: '100%',
             height: '100%',
           }}>
-          {isLoading && (
-            <View
-              style={{
-                position: 'absolute',
-                top: 20,
-                justifyContent: 'center',
-                width: '100%',
-                zIndex: 100,
-                backgroundColor: bgSecondary,
-                width: 25,
-                height: 25,
-                borderRadius: 50,
-                right: width / 2,
-              }}>
-              <ActivityIndicator
-                animating={isLoading || false}
-                color={bgPrimary}
-                hidesWhenStopped={true}
-                size="small"
-              />
-            </View>
-          )}
-          {error && <RenderError />}
+          {error && <RenderError error={error} />}
+          {success && <RenderSuccess success={success} />}
           <ScrollView
             contentContainerStyle={[
               styles.contentsContainer,
@@ -193,19 +139,46 @@ export const PasswordResetScreen = ({navigation}) => {
                 />
               </TouchableOpacity>
               <TextInput
+                onSubmitEditing={handleSendInstructions}
                 placeholderTextColor={colorDisabled}
                 placeholder="Email"
                 style={styles.textInput}
-                defaultValue={resetEmail}
+                value={resetEmail}
+                keyboardType="email-address"
                 onChangeText={mail => setResetEmail(mail)}
               />
             </View>
 
             <TouchableOpacity
+              disabled={isLoading || false}
               activeOpacity={1}
               onPress={handleSendInstructions}
-              style={styles.btnLogin}>
-              <Text style={styles.btnLoginText}>Send Instruction</Text>
+              style={[
+                styles.btnLogin,
+                {
+                  backgroundColor: isLoading ? colorDisabled : bgPrimary,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+              ]}>
+              <Text
+                style={[
+                  styles.btnLoginText,
+                  {color: isLoading ? lightDark : bgLight},
+                ]}>
+                Send Instruction
+              </Text>
+
+              {isLoading && (
+                <ActivityIndicator
+                  style={{marginLeft: 12}}
+                  animating={isLoading || false}
+                  color={bgPrimary}
+                  hidesWhenStopped={true}
+                  size="small"
+                />
+              )}
             </TouchableOpacity>
           </ScrollView>
         </ImageBackground>
@@ -223,15 +196,15 @@ const styles = StyleSheet.create({
 
   backText: {
     fontFamily: 'Outfit-Light',
-    fontSize: deviceTypeAndroid === 'Handset' ? 18 : 30,
+    fontSize: 18,
     color: bgPrimary,
   },
 
   description: {
-    fontSize: deviceTypeAndroid === 'Handset' ? 18 : 30,
+    fontSize: 18,
     color: lightDark,
     marginTop: 10,
-    fontFamily: 'Outfit',
+    fontFamily: 'Outfit-Light',
   },
 
   title: {
@@ -247,7 +220,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colorDisabled,
     marginBottom: 10,
     fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
-    fontFamily: 'Outfit-Medium',
+    fontFamily: 'Outfit-Light',
     color: lightDark,
     paddingLeft: deviceTypeAndroid === 'Handset' ? 40 : 55,
   },
@@ -262,9 +235,8 @@ const styles = StyleSheet.create({
   },
 
   btnLoginText: {
-    fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
-    fontFamily:
-      deviceTypeAndroid === 'Handset' ? 'Outfit-Medium' : 'Outfit-Bold',
+    fontSize: 18,
+    fontFamily: 'Outfit-Medium',
     color: bgLight,
     textAlign: 'center',
   },

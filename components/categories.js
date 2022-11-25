@@ -13,10 +13,12 @@ import {
   bgPrimary,
   lightDark,
   bgSecondary,
+  offset,
 } from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {deviceTypeAndroid} from '../utils/platforms';
 import Animated, {FadeIn, SlideInUp} from 'react-native-reanimated';
+import Svg, {Path} from 'react-native-svg';
 
 const discussionList = [
   {
@@ -112,7 +114,7 @@ const ListHeaderComponent = () => (
   </View>
 );
 
-export const Categories = ({navigation, scrollY}) => {
+export const Categories = ({navigation}) => {
   const [refreshing, setRefreshing] = useState(false);
   const [endThreshholdReached, setEndThresholdReached] = useState(false);
 
@@ -142,7 +144,7 @@ export const Categories = ({navigation, scrollY}) => {
   const _renderItem = props => {
     return (
       <Animated.View
-        entering={FadeIn.delay(props.index * 100)}
+        entering={FadeIn.delay(props.index * props.length)}
         style={{
           width: '100%',
           justifyContent: 'center',
@@ -178,16 +180,44 @@ export const Categories = ({navigation, scrollY}) => {
                 }}>
                 <Text style={styles.description}>#{props.item.title}</Text>
                 <View style={{justifyContent: 'center', alignItems: 'center'}}>
-                  <Text
-                    style={[
-                      styles.description,
-                      {fontFamily: 'Outfit-Black', fontSize: 16},
-                    ]}>
-                    active
-                  </Text>
-                  <Text style={[styles.description, {fontSize: 14}]}>
-                    @{props.item.activeMembers}/ {props.item.totalMembers}
-                  </Text>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Ionicons
+                      name="people-outline"
+                      size={Size - 4}
+                      color={lightDark}
+                    />
+
+                    <Text
+                      style={[
+                        styles.description,
+                        {
+                          fontSize: 14,
+                          marginLeft: 8,
+                          fontFamily: 'Outfit-Bold',
+                        },
+                      ]}>
+                      {props.item.activeMembers}/ {props.item.totalMembers}
+                    </Text>
+                  </View>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Ionicons
+                      name="chatbubble-ellipses-outline"
+                      size={Size - 4}
+                      color={lightDark}
+                    />
+
+                    <Text
+                      style={[
+                        styles.description,
+                        {
+                          fontSize: 14,
+                          marginLeft: 8,
+                          fontFamily: 'Outfit-Bold',
+                        },
+                      ]}>
+                      {props.item.activeMembers - 20 * props.index}
+                    </Text>
+                  </View>
                 </View>
               </View>
               <TouchableOpacity
@@ -204,11 +234,8 @@ export const Categories = ({navigation, scrollY}) => {
                 <Text
                   style={{
                     color: bgLight,
-                    fontSize: deviceTypeAndroid === 'Handset' ? 16 : 27,
-                    fontFamily:
-                      deviceTypeAndroid === 'Handset'
-                        ? 'Outfit-Medium'
-                        : 'Outfit-Bold',
+                    fontSize: 18,
+                    fontFamily: 'Outfit-Light',
                     marginRight: 5,
                   }}>
                   Join
@@ -219,7 +246,16 @@ export const Categories = ({navigation, scrollY}) => {
                     borderRadius: 50,
                     padding: 5,
                   }}>
-                  <Ionicons name="add" size={Size / 1.5} color={bgLight} />
+                  <Svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 48 48"
+                    height={Size - 6}
+                    width={Size - 6}>
+                    <Path
+                      d="M23.25 37V24.75H11v-1.5h12.25V11h1.5v12.25H37v1.5H24.75V37Z"
+                      fill={bgLight}
+                    />
+                  </Svg>
                 </View>
               </TouchableOpacity>
             </View>
@@ -245,22 +281,18 @@ export const Categories = ({navigation, scrollY}) => {
         width: '100%',
         paddingHorizontal: 16,
         alignSelf: 'center',
-        paddingTop: 140,
-        paddingBottom: 100,
+        paddingTop: 20,
+        paddingBottom: offset,
       }}
       // getItemLayout={(length, index) => ({length, index})}
       refreshing={refreshing}
       onRefresh={async () => {
         setRefreshing(true);
         setTimeout(() => setRefreshing(false), 5000);
-        setRefreshing(false);
       }}
-      progressViewOffset={60}
+      progressViewOffset={-offset}
       onEndReached={() => {
         setEndThresholdReached(true);
-      }}
-      onScroll={e => {
-        scrollY.setValue(e.nativeEvent.contentOffset.y);
       }}
     />
   );
@@ -274,8 +306,8 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: deviceTypeAndroid === 'Handset' ? 22 : 35,
-    fontFamily: 'Outfit-Regular',
+    fontSize: 20,
+    fontFamily: 'Outfit-Medium',
     color: lightDark,
   },
 

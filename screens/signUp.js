@@ -19,7 +19,6 @@ import {
   colorDisabled,
   Size,
   bgSecondary,
-  colorSuccess,
   offset,
 } from '../utils/colors';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -28,12 +27,12 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {deviceTypeAndroid} from '../utils/platforms';
 import {useRegisterMutation} from '../feature/services/query';
-import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
+import {RenderError, RenderSuccess} from '../components';
 
 export const SignUpScreen = ({navigation}) => {
   /*
   ********************************
-  //Internal Signup State
+  //Internal State
   ********************************
   */
   const [firstname, setFirstname] = useState(null);
@@ -49,14 +48,14 @@ export const SignUpScreen = ({navigation}) => {
 
   const iconName = visible ? 'eye-off' : 'eye';
 
-  //validate email authenticity
+  //validate email
   const emailPattern =
     /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
   const handleRegister = async () => {
     /*
     ********************************
-    //Reset error state
+    //Reset state
     ********************************
   */
     setIsLoading(true);
@@ -79,7 +78,7 @@ export const SignUpScreen = ({navigation}) => {
 
     if (error) {
       setIsLoading(false);
-      return setError(error?.data.message || error?.error);
+      return setError(error?.data?.message || error?.error.split(':')[1]);
     }
 
     if (data) {
@@ -91,49 +90,12 @@ export const SignUpScreen = ({navigation}) => {
     }
   };
 
+  //clear Error @4mins
+  if (error) {
+    setTimeout(() => setError(false), 4000);
+  }
+
   const {width} = useWindowDimensions();
-
-  const RenderError = () => (
-    <Animated.View
-      entering={SlideInDown}
-      exiting={SlideOutDown}
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        marginTop: 100,
-        padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colorGoogle,
-      }}>
-      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
-        {error}
-      </Text>
-    </Animated.View>
-  );
-
-  const RenderSuccess = () => (
-    <Animated.View
-      entering={SlideInDown}
-      exiting={SlideOutDown}
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        marginTop: 100,
-        padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colorSuccess,
-      }}>
-      <Text style={{color: bgLight, fontFamily: 'Outfit-Light', fontSize: 18}}>
-        {success}
-      </Text>
-    </Animated.View>
-  );
 
   return (
     <>
@@ -166,13 +128,14 @@ export const SignUpScreen = ({navigation}) => {
           </View>
         ) : null}
 
-        {error && <RenderError />}
-        {success && <RenderSuccess />}
+        {error && <RenderError error={error} />}
+        {success && <RenderSuccess success={success} />}
         <ScrollView
           contentContainerStyle={[
             styles.contentsContainer,
             {paddingTop: offset},
           ]}
+          bounces={false}
           showsVerticalScrollIndicator={false}>
           <View style={styles.logoContainer}>
             <TouchableOpacity
@@ -322,8 +285,31 @@ export const SignUpScreen = ({navigation}) => {
             <TouchableOpacity
               activeOpacity={1}
               onPress={handleRegister}
-              style={styles.btnSignup}>
-              <Text style={styles.btnSignupText}>Sign-Up</Text>
+              style={[
+                styles.btnSignup,
+                {
+                  backgroundColor: isLoading ? colorDisabled : bgPrimary,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+              ]}>
+              <Text
+                style={[
+                  styles.btnSignupText,
+                  {color: isLoading ? lightDark : bgLight},
+                ]}>
+                Sign-Up
+              </Text>
+              {isLoading && (
+                <ActivityIndicator
+                  style={{marginLeft: 12}}
+                  animating={isLoading || false}
+                  color={bgPrimary}
+                  hidesWhenStopped={true}
+                  size="small"
+                />
+              )}
             </TouchableOpacity>
             <Text
               style={{
@@ -349,14 +335,14 @@ export const SignUpScreen = ({navigation}) => {
             <TouchableOpacity
               activeOpacity={1}
               style={{...styles.btnSocial, backgroundColor: bgPrimary}}>
-              <FontAwesome5 name="facebook-f" color={bgLight} size={Size} />
+              <FontAwesome5 name="facebook-f" color={bgLight} size={Size - 8} />
             </TouchableOpacity>
 
             <TouchableOpacity activeOpacity={1} style={styles.btnSocial}>
               <MaterialCommunityIcons
                 name="google"
                 color={bgLight}
-                size={Size}
+                size={Size - 8}
                 style={{borderRadius: 50}}
               />
             </TouchableOpacity>
@@ -366,7 +352,7 @@ export const SignUpScreen = ({navigation}) => {
               <FontAwesome5
                 name="linkedin-in"
                 color={bgLight}
-                size={Size}
+                size={Size - 8}
                 style={{borderRadius: 50}}
               />
             </TouchableOpacity>
@@ -385,8 +371,8 @@ export const SignUpScreen = ({navigation}) => {
               <Text
                 style={{
                   ...styles.textInfo,
-                  fontWeight: 'bold',
                   color: bgPrimary,
+                  fontFamily: 'Outfit-Regular',
                 }}>
                 Sign-In
               </Text>
@@ -414,19 +400,12 @@ const styles = StyleSheet.create({
 
   backText: {
     fontFamily: 'Outfit-Light',
-    fontSize: deviceTypeAndroid === 'Handset' ? 18 : 30,
+    fontSize: 18,
     color: bgPrimary,
-  },
-
-  description: {
-    fontSize: deviceTypeAndroid === 'Handset' ? 18 : 30,
-    fontFamily: 'Outfit-Medium',
-    color: bgPrimary,
-    marginTop: 10,
   },
 
   title: {
-    fontSize: deviceTypeAndroid === 'Handset' ? 24 : 30,
+    fontSize: 24,
     fontFamily: 'Outfit-Medium',
     color: lightDark,
   },
@@ -439,10 +418,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colorDisabled,
     marginBottom: 10,
-    fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
-    fontFamily: 'Outfit-Medium',
+    fontSize: 18,
+    fontFamily: 'Outfit-Light',
     color: lightDark,
-    paddingLeft: deviceTypeAndroid === 'Handset' ? 45 : 60,
+    paddingLeft: 45,
   },
 
   btnSignup: {
@@ -455,18 +434,18 @@ const styles = StyleSheet.create({
   },
 
   btnSignupText: {
-    fontSize: deviceTypeAndroid === 'Handset' ? 18 : 24,
-    fontFamily:
-      deviceTypeAndroid === 'Handset' ? 'Outfit-Medium' : 'Outfit-Bold',
+    fontSize: 18,
+    fontFamily: 'Outfit-Medium',
     color: bgLight,
     textAlign: 'center',
   },
 
   btnSocial: {
-    width: deviceTypeAndroid === 'Handset' ? 35 : 50,
-    height: deviceTypeAndroid === 'Handset' ? 35 : 50,
-    borderRadius: 50,
+    width: 35,
+    height: 35,
+    borderRadius: 20,
     backgroundColor: colorGoogle,
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 8,
@@ -475,8 +454,8 @@ const styles = StyleSheet.create({
 
   textInfo: {
     textAlign: 'center',
-    fontSize: deviceTypeAndroid === 'Handset' ? 16 : 24,
-    fontFamily: 'Outfit-Medium',
+    fontSize: 18,
+    fontFamily: 'Outfit-Light',
     color: lightDark,
   },
 });
