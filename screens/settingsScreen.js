@@ -22,15 +22,7 @@ import {
 } from '../utils/colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {useProfileQuery} from '../feature/services/query';
-import Animated, {
-  FadeIn,
-  FadeOut,
-  SlideInDown,
-  SlideOutDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, {FadeIn, FadeOut} from 'react-native-reanimated';
 import {logOut} from '../feature/reducers/authReducer';
 import {useDispatch, useSelector} from 'react-redux';
 import userIcon from '../assets/images/user.png';
@@ -38,14 +30,12 @@ import {RenderError} from '../components';
 
 export const SettingsScreen = ({navigation}) => {
   const {loginId} = useSelector(state => state.auth);
-  const {data, error, isLoading} = useProfileQuery(loginId);
+  const {data, error, isLoading} = useProfileQuery(loginId, {
+    refetchOnMountOrArgChange: true,
+    refetchOnReconnect: true,
+  });
 
   const dispatch = useDispatch();
-  const spinner = useSharedValue(0);
-
-  const spinnerStyle = useAnimatedStyle(() => ({
-    transform: [{rotate: `${spinner.value}deg`}],
-  }));
 
   if (error && error?.data === 'Unauthorized') {
     dispatch(logOut());
@@ -177,7 +167,7 @@ export const SettingsScreen = ({navigation}) => {
                       color: colorGoogle,
                       marginTop: 8,
                     }}>
-                    You account is not verified
+                    Account is not verified
                   </Text>
                 )}
 

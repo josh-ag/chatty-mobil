@@ -23,13 +23,17 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {deviceTypeAndroid} from '../utils/platforms';
 import {useProfileQuery} from '../feature/services/query';
 import Animated, {FadeIn, FadeOut} from 'react-native-reanimated';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {logOut} from '../feature/reducers/authReducer';
 import userIcon from '../assets/images/user.png';
 import {RenderError} from '../components';
 
 export const ProfileScreen = ({navigation}) => {
-  const {data, error, isLoading} = useProfileQuery();
+  const {loginId} = useSelector(state => state.auth);
+  const {data, error, isLoading} = useProfileQuery(loginId, {
+    refetchOnMountOrArgChange: true,
+    refetchOnReconnect: true,
+  });
 
   const dispatch = useDispatch();
 

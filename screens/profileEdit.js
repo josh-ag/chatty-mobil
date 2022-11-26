@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
+  Modal,
   ActivityIndicator,
 } from 'react-native';
 import {
@@ -17,14 +18,8 @@ import {
   useUpdateProfilePictureMutation,
 } from '../feature/services/query';
 import {useDispatch, useSelector} from 'react-redux';
-import Animated, {
-  SlideInDown,
-  SlideOutDown,
-  FadeIn,
-  FadeOut,
-} from 'react-native-reanimated';
+import Animated, {FadeIn, FadeOut} from 'react-native-reanimated';
 import {
-  colorGoogle,
   offset,
   bgPrimary,
   bgSecondary,
@@ -32,12 +27,55 @@ import {
   bgLight,
   lightDark,
   colorDisabled,
+  colorSuccess,
 } from '../utils/colors';
 import {deviceTypeAndroid} from '../utils/platforms';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import DocumentPicker from 'react-native-document-picker';
 import userIcon from '../assets/images/user.png';
 import {RenderError, RenderSuccess} from '../components';
+const RNFS = require('react-native-fs');
+
+const ModalComponent = ({modal}) => {
+  return (
+    <>
+      <StatusBar
+        barStyle={'dark-content'}
+        backgroundColor={'rgba(204, 204, 204, .7)'}
+      />
+      <Modal visible={modal} animationType="slide" transparent={true}>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            backgroundColor: 'rgba(204, 204, 204, .7)',
+          }}>
+          <View
+            style={{
+              borderRadius: 12,
+              marginTop: offset * 1.5,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: lightDark,
+              height: 100,
+              width: 150,
+            }}>
+            <ActivityIndicator color={colorSuccess} />
+            <Text
+              style={{
+                color: bgLight,
+                marginTop: 8,
+                fontFamily: 'Outfit-Light',
+                fontSize: 16,
+              }}>
+              Please wait...
+            </Text>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+};
 
 export const ProfileEditScreen = ({navigation}) => {
   /*
@@ -51,13 +89,19 @@ export const ProfileEditScreen = ({navigation}) => {
   const [bios, setBios] = useState('');
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
+  const [type, setType] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(null);
   const [isError, setIsError] = useState(null);
+  const [modal, setModal] = useState(false);
 
   const [updateProfile] = useUpdateProfileMutation();
   const [updateProfilePicture] = useUpdateProfilePictureMutation();
   const {loginId} = useSelector(state => state.auth);
-  const {data, error, isLoading} = useProfileQuery(loginId);
+  const {data, error, isLoading} = useProfileQuery(loginId, {
+    refetchOnMountOrArgChange: true,
+    refetchOnReconnect: true,
+  });
   const dispatch = useDispatch();
 
   const handleUpdate = async () => {
@@ -73,21 +117,25 @@ export const ProfileEditScreen = ({navigation}) => {
       bios: bios || data?.user?.bios,
     };
 
-    // console.log(updatedUser);
+    const {data: updateRes, error: updateError} = await updateProfile({
+      id: loginId,
+      updatedUser,
+    });
 
-    const {data, error} = await updateProfile(loginId, updatedUser);
-
-    if (error) {
-      console.log(error);
+    if (updateError) {
       setLoading(false);
-      setIsError(error?.message || error?.error.split(':')[1]);
+      setIsError(updateError?.message || updateError?.error.split(':')[1]);
+
       return;
     }
 
     // reset state
-    console.log(data);
     setLoading(false);
-    setSuccess(data?.message);
+    setSuccess(updateRes?.message);
+    setFirstname('');
+    setLastname('');
+    setUsername('');
+    setBios('');
   };
 
   //SELECT A FILE
@@ -99,6 +147,7 @@ export const ProfileEditScreen = ({navigation}) => {
       });
 
       if (file) {
+        setType(file.type);
         setFile(file.fileCopyUri);
       }
     } catch (err) {
@@ -107,28 +156,40 @@ export const ProfileEditScreen = ({navigation}) => {
   };
 
   // handle update profile picture
-  const handleUpdateProfile = () => {
+  const handleUpdateProfilePicture = async () => {
     //RESET STATE
-    setLoading(true);
+    setUploading(true);
+    setModal(true);
+    setIsError(false);
 
     if (!file) return;
+
     //ALLOW READING FILE AS BASE64 STRING
-    let FR = new FileReader();
+    const base64String = await RNFS.readFile(file, 'base64');
 
-    FR.onloadend = async () => {
-      const {data, error} = await updateProfilePicture(FR.result);
+    if (!base64String) return console.log('Image Does not exist!');
 
-      if (error) {
-        // console.log(error);
-        setLoading(false);
-        return;
-      }
+    const uploads = `data:${type};base64,` + base64String;
 
-      setLoading(false);
+    const {data, error} = await updateProfilePicture({
+      uploads,
+    });
+
+    if (error) {
+      console.log(error);
+      setUploading(false);
+      setModal(false);
       setFile(null);
-    };
+      setIsError(
+        error?.data?.message || error?.message || error?.error.split(':')[1],
+      );
+      return;
+    }
 
-    FR.readAsDataURL(file);
+    setUploading(false);
+    setModal(false);
+    setSuccess(data?.message);
+    setFile(null);
   };
 
   if (error && error?.data === 'Unauthorized') {
@@ -150,6 +211,8 @@ export const ProfileEditScreen = ({navigation}) => {
         backgroundColor="transparent"
         translucent
       />
+
+      {modal && <ModalComponent modal={modal} loading={uploading} />}
       <ScrollView
         contentContainerStyle={{
           minHeight: '100%',
@@ -205,20 +268,42 @@ export const ProfileEditScreen = ({navigation}) => {
             <View style={styles.profileHeader}>
               <Image
                 source={
-                  data?.user?.profilePicture
+                  file
+                    ? {uri: file}
+                    : data?.user?.profilePicture
                     ? {uri: data?.user?.profilePicture?.url}
                     : userIcon
                 }
                 resizeMode="cover"
                 style={styles.accAvatar}
               />
-
-              <TouchableOpacity
-                onPress={handlePickFile}
-                activeOpacity={1}
-                style={{marginTop: offset, marginLeft: 8}}>
-                <Ionicons name="camera" color={bgPrimary} size={Size - 6} />
-              </TouchableOpacity>
+              <View
+                style={{
+                  marginLeft: 8,
+                  alignSelf: 'flex-end',
+                  marginBottom: 16,
+                }}>
+                <TouchableOpacity
+                  onPress={handlePickFile}
+                  activeOpacity={1}
+                  style={{marginTop: offset, marginLeft: 8}}>
+                  <Ionicons name="camera" color={bgPrimary} size={Size - 6} />
+                </TouchableOpacity>
+                {file && (
+                  <TouchableOpacity
+                    style={{marginTop: 6}}
+                    activeOpacity={1}
+                    onPress={handleUpdateProfilePicture}>
+                    <Text
+                      style={[
+                        styles.backText,
+                        {fontFamily: 'Outfit-Regular', fontSize: 16},
+                      ]}>
+                      Save
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
 
             <Animated.View
@@ -358,13 +443,15 @@ export const ProfileEditScreen = ({navigation}) => {
                   </View>
 
                   <TouchableOpacity
-                    disabled={loading ? true : false}
+                    disabled={
+                      firstname || lastname || username || bios ? false : true
+                    }
                     onPress={handleUpdate}
                     style={{
                       padding: 16,
                       borderRadius: 40,
                       backgroundColor:
-                        firstname || lastname || username || bios
+                        !loading && (firstname || lastname || username || bios)
                           ? bgPrimary
                           : colorDisabled,
                       flexDirection: 'row',
@@ -375,7 +462,11 @@ export const ProfileEditScreen = ({navigation}) => {
                       style={{
                         marginLeft: 10,
                         fontSize: 16,
-                        color: bgLight,
+                        color:
+                          !loading &&
+                          (firstname || lastname || username || bios)
+                            ? bgLight
+                            : lightDark,
                         textAlign: 'center',
                         fontFamily: 'Outfit-Medium',
                       }}>

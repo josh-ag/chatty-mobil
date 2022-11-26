@@ -30,20 +30,21 @@ export const api = createApi({
     }),
 
     updateProfile: builder.mutation({
-      query: (id, updatedUser) => ({
-        url: `/user/${id}`,
-        method: 'put',
-        body: updatedUser,
-      }),
+      query: ({id, updatedUser}) => {
+        return {
+          url: `/user/${id}`,
+          method: 'put',
+          body: updatedUser,
+        };
+      },
     }),
 
     updateProfilePicture: builder.mutation({
       query: newProfilePicture => {
-        const profilePicture = new FormData('uploads', newProfilePicture);
         return {
-          url: `/user/uploads`,
-          method: 'put',
-          body: profilePicture,
+          url: `/user/profile/upload`,
+          method: 'post',
+          body: newProfilePicture,
         };
       },
     }),
