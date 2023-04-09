@@ -23,9 +23,9 @@ import {
 import Svg, {Path} from 'react-native-svg';
 import {deviceTypeAndroid} from '../utils/platforms';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import io from 'socket.io-client';
+import {io} from 'socket.io-client';
 import {useProfileQuery} from '../feature/services/query';
-const socket = io('https://c61c-105-112-190-121.eu.ngrok.io/');
+const socket = io('https://6727-105-112-24-5.eu.ngrok.io');
 
 const barHeight = 200;
 
@@ -54,17 +54,16 @@ export const DiscussionDetails = ({navigation, route}) => {
         {
           text: 'Join waiting list',
           onPress: () => {
-            Alert.alert(
-              'Congratulations!',
-              `You have been whitelisted for this category`,
-            );
-
             //emit join message
             socket.emit('join', {
               room: selected?.title,
               id: socket.id,
               user: {username: data?.user},
             });
+            Alert.alert(
+              'Congratulations!',
+              `You have been whitelisted for this category`,
+            );
           },
         },
       ],

@@ -31,8 +31,8 @@ import {RenderError} from '../components';
 export const SettingsScreen = ({navigation}) => {
   const {loginId} = useSelector(state => state.auth);
   const {data, error, isLoading} = useProfileQuery(loginId, {
-    refetchOnMountOrArgChange: true,
     refetchOnReconnect: true,
+    refetchOnMountOrArgChange: true,
   });
 
   const dispatch = useDispatch();

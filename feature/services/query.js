@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'https://chatty-web-server.herokuapp.com/api',
+    baseUrl: 'https://chatty-server-xy3z.onrender.com/api',
     prepareHeaders: async header => {
       try {
         const auth_token = await AsyncStorage.getItem('@auth_token');

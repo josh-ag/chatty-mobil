@@ -69,6 +69,8 @@ export const LoginScreen = ({navigation}) => {
       const loginData = {email, password};
       let {data, error} = await login(loginData);
 
+      console.log(error);
+
       if (error) {
         // console.log(error);
         setIsLoading(false);

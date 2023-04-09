@@ -1,8 +1,8 @@
-import React, {useEffect} from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {AuthStack} from './navigators/authStack';
-import {AppStack} from './navigators/stack';
-import {useDispatch, useSelector} from 'react-redux';
+import React, { useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { AuthStack } from './navigators/authStack';
+import { AppStack } from './navigators/stack';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   ActivityIndicator,
   ToastAndroid,
@@ -10,19 +10,19 @@ import {
   StatusBar,
   LogBox,
 } from 'react-native';
-import {bgPrimary, bgSecondary, lightDark} from './utils/colors';
+import { bgPrimary, bgSecondary, lightDark } from './utils/colors';
 import NetInfo from '@react-native-community/netinfo';
-import {Authenticate} from './feature/reducers/authReducer';
-import Animated, {FadeIn, FadeOut} from 'react-native-reanimated';
+import { Authenticate } from './feature/reducers/authReducer';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 //DISABLE ALL LOGS FROM SCREEN
 LogBox.ignoreAllLogs();
 
 const Main = () => {
-  const {isAuthenticated, isLoading} = useSelector(state => state.auth);
+  const { isAuthenticated, isLoading } = useSelector(state => state.auth);
   const dispatch = useDispatch();
 
-  //subscribe to network state
+  //get network state
   const unsubscribe = NetInfo.addEventListener(state => {
     // console.log('Is Internet Reachable: ', state.isInternetReachable);
     // console.log('Connection Type: ', state.type);
